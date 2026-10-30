@@ -206,13 +206,6 @@ CREATE TABLE `usuario` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabela principal de usuários do aplicativo';
 
 --
--- Despejando dados para a tabela `usuario`
---
-
-INSERT INTO `usuario` (`id_usuario`, `firebase_uid`, `nome`, `email`, `senha`, `telefone`, `foto_url`, `tipo_usuario`, `excluido_em`) VALUES
-(1, NULL, 'Xavees', 'teste.aurora@example.com', '$argon2id$v=19$m=19456,p=1,t=2$QmCU3dgybCipiyRku06B2g$lkU6//AXs1N649TNtdQoz10esO4r8mg+Zs1lTWfMlZw', '11951063027', NULL, 'COMUM', NULL),
-(2, NULL, 'Teste User 002', 'teste1.aurora@gmail.com', '$argon2id$v=19$m=19456,p=1,t=2$Isj+eUH32YnXygc/+x7FBQ$unazQf7xI71jiqVHZe4WNctTUc50QdrVzIpES5qfzrc', NULL, NULL, 'COMUM', '2026-10-29 23:24:47.000000');
-
 --
 -- Índices para tabelas despejadas
 --
