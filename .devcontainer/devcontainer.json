@@ -1,0 +1,65 @@
+// Para detalhes sobre o formato, consulte https://aka.ms/devcontainer.json
+{
+  "name": "Aurora Backend",
+
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  // ---------------------------------------------------------------
+  // Features – ferramentas extras instaladas automaticamente
+  // ---------------------------------------------------------------
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // ---------------------------------------------------------------
+  // Lifecycle – comandos executados ao criar/iniciar o container
+  // ---------------------------------------------------------------
+  "postCreateCommand": "npm install",
+
+  // ---------------------------------------------------------------
+  // Porta encaminhada automaticamente
+  // ---------------------------------------------------------------
+  "forwardPorts": [3000, 3306],
+  "portsAttributes": {
+    "3000": { "label": "NestJS API", "onAutoForward": "notify" },
+    "3306": { "label": "MariaDB 10.4.32", "onAutoForward": "silent" }
+  },
+
+  // ---------------------------------------------------------------
+  // Extensões do VS Code recomendadas no container
+  // ---------------------------------------------------------------
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "aaaa-lt.charmed-nest-icons",
+        "dracula-theme.theme-dracula",
+        "esbenp.prettier-vscode",
+        "github.remotehub",
+        "humao.rest-client",
+        "icrawl.discord-vscode",
+        "imgildev.vscode-nestjs-prisma-snippets",
+        "imgildev.vscode-nestjs-snippets-extension",
+        "ms-vscode.azure-repos",
+        "ms-vscode.remote-repositories",
+        "ms-vscode.vscode-typescript-next",
+        "pkief.material-icon-theme",
+        "prisma.prisma",
+        "rvest.vs-code-prettier-eslint",
+        "tipsngoding.nest-generator",
+        "vue.volar",
+        "ms-azuretools.vscode-containers"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": "explicit"
+        },
+        "js/ts.tsdk.path": "node_modules/typescript/lib"
+      }
+    }
+  }
+}
