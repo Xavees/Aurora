@@ -1,0 +1,46 @@
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    env_file:
+      - ../.env
+    environment:
+      # Dentro do Docker, o banco é acessado pelo nome do serviço.
+      DB_HOST: db
+      DB_PORT: "3306"
+    command: sleep infinity
+    networks:
+      - aurora-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:10.4.32
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../bancodeDadosTemp.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    env_file:
+      - ../.env
+    ports:
+      # Porta do Windows 3307 -> Porta interna do MariaDB 3306.
+      - "127.0.0.1:3307:3306"
+    networks:
+      - aurora-net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  mysql-data:
+
+networks:
+  aurora-net:
