@@ -1,7 +1,7 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
-  Column,
+  Column,DeleteDateColumn
 } from 'typeorm';
 
 export enum TipoUsuario {
@@ -73,4 +73,19 @@ export class UsuarioOrmEntity {
     default: TipoUsuario.COMUM,
   })
   tipoUsuario!: TipoUsuario;
+
+  @DeleteDateColumn({
+  name: 'excluido_em',
+  type: 'datetime',
+  precision: 6,
+  nullable: true,
+})
+excluidoEm!: Date | null;
+
+
+
+
+
+
+
 }

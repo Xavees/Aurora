@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,7 +9,12 @@ import {
 import { JwtService } from '@nestjs/jwt';
 
 import type { Request } from 'express';
+
 import type { UsuarioAutenticado } from '../../../domain/entitites/usuario-autenticado.entity.js';
+
+import type { UsuarioRepository } from '../../../../usuarios/domain/repositories/usuario.repository.js';
+
+import { USUARIO_REPOSITORY } from '../../../../usuarios/domain/repositories/usuario.repository.token.js';
 
 interface JwtPayload {
   sub: string;
@@ -25,6 +31,15 @@ export interface RequestAutenticada extends Request {
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
+
+    /**
+     * O Guard depende do contrato do repositório,
+     * e não diretamente do TypeORM.
+     *
+     * Isso mantém nossa arquitetura desacoplada.
+     */
+    @Inject(USUARIO_REPOSITORY)
+    private readonly usuarioRepository: UsuarioRepository,
   ) {}
 
   async canActivate(
@@ -36,12 +51,9 @@ export class JwtAuthGuard implements CanActivate {
     const authorization = request.headers.authorization;
 
     /**
-     * Esperamos exatamente o formato:
+     * Aceitamos apenas:
      *
      * Authorization: Bearer <token>
-     *
-     * Não aceitamos tokens pela query string,
-     * pois URLs podem acabar registradas em logs.
      */
     const partes = authorization?.split(' ');
 
@@ -58,14 +70,15 @@ export class JwtAuthGuard implements CanActivate {
 
     const token = partes[1];
 
+    let payload: JwtPayload;
+
     try {
       /**
-       * verifyAsync valida a assinatura e a expiração.
-       *
-       * Também exigimos o algoritmo, o emissor
-       * e a audiência configurados no JwtModule.
+       * Primeiro validamos o JWT:
+       * assinatura, expiração, algoritmo,
+       * emissor e audiência.
        */
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+      payload = await this.jwtService.verifyAsync<JwtPayload>(
         token,
         {
           algorithms: ['HS256'],
@@ -73,36 +86,55 @@ export class JwtAuthGuard implements CanActivate {
           audience: 'aurora-app',
         },
       );
-
-      /**
-       * Além da verificação criptográfica, validamos
-       * os campos que nossa aplicação precisa.
-       */
-      if (
-        typeof payload.sub !== 'string' ||
-        !/^[0-9]+$/.test(payload.sub) ||
-        typeof payload.email !== 'string' ||
-        !payload.email
-      ) {
-        throw new UnauthorizedException(
-          'Token de autenticação inválido.',
-        );
-      }
-
-      request.usuario = {
-        id: payload.sub,
-        email: payload.email,
-      };
-
-      return true;
     } catch {
-      /**
-       * Não revelamos se o token está expirado,
-       * adulterado ou possui assinatura inválida.
-       */
       throw new UnauthorizedException(
         'Token de autenticação inválido ou expirado.',
       );
     }
+
+    /**
+     * Validamos os campos obrigatórios
+     * do token antes de consultar o banco.
+     */
+    if (
+      typeof payload.sub !== 'string' ||
+      !/^[0-9]+$/.test(payload.sub) ||
+      typeof payload.email !== 'string' ||
+      !payload.email
+    ) {
+      throw new UnauthorizedException(
+        'Token de autenticação inválido.',
+      );
+    }
+
+    /**
+     * NOVA VERIFICAÇÃO — SOFT DELETE
+     *
+     * O TypeORM ignora automaticamente registros
+     * com excluido_em preenchido nas consultas
+     * normais do Repository.
+     */
+    const usuario = await this.usuarioRepository.buscarPorId(
+      payload.sub,
+    );
+
+    if (!usuario) {
+      throw new UnauthorizedException(
+        'Conta inexistente ou desativada.',
+      );
+    }
+
+    /**
+     * Só agora consideramos o usuário autenticado.
+     *
+     * Usamos o e-mail atual do banco, pois ele
+     * pode ter sido alterado depois da emissão do JWT.
+     */
+    request.usuario = {
+      id: usuario.id,
+      email: usuario.email,
+    };
+
+    return true;
   }
 }

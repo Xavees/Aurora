@@ -18,9 +18,11 @@ import { LoginUseCase } from './application/use-cases/login.use-case.js';
 import { CadastroUsuarioUseCase } from './application/use-cases/cadastro-usuario.use-case.js';
 import { JwtAuthGuard } from './infrastructure/security/guards/jwt-auth.guard.js';
 import { AuthController } from './presentation/http/auth.controller.js';
+import { UsuariosPersistenceModule } from '../usuarios/infrastructure/persistence/typeorm/usuarios-persistence.module.js';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UsuarioOrmEntity]),
+    TypeOrmModule.forFeature([UsuarioOrmEntity]), UsuariosPersistenceModule ,
 
     JwtModule.registerAsync({
       inject: [ConfigService],

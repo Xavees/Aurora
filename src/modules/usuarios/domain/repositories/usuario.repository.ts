@@ -13,4 +13,6 @@ export interface UsuarioRepository {
     id: string,
     dados: AtualizarUsuarioData,
   ): Promise<Usuario | null>;
+
+   desativar(id: string): Promise<boolean>;
 }

@@ -1,12 +1,12 @@
 
-import {Controller,  ForbiddenException,Get,Param,UseGuards,} from '@nestjs/common';
+import {  Controller, ForbiddenException, Get, Patch, Delete, HttpCode, Body, Param, UseGuards,} from '@nestjs/common';
 import { BuscarUsuarioUseCase } from '../../application/use-cases/buscar-usuario.use-case.js';
 import { BuscarUsuarioParamDto } from './dto/buscar-usuario-param.dto.js';
 import { UsuarioResponseDto } from './dto/usuario-response.dto.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/security/guards/jwt-auth.guard.js';
 import { UsuarioAtual } from '../../../auth/presentation/http/decorators/usuario-atual.decorator.js';
 import type { UsuarioAutenticado } from '../../../auth/domain/entitites/usuario-autenticado.entity.js';
-import {Body,Patch,} from '@nestjs/common';
+import { DesativarUsuarioUseCase } from '../../application/use-cases/desativar-usuario.use-case.js';
 import { AtualizarUsuarioUseCase } from '../../application/use-cases/atualizar-usuario.use-case.js';
 import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto.js';
 
@@ -16,6 +16,7 @@ export class UsuariosController {
   constructor(
     private readonly buscarUsuarioUseCase: BuscarUsuarioUseCase,
     private readonly atualizarUsuarioUseCase: AtualizarUsuarioUseCase,
+    private readonly desativarUsuarioUseCase: DesativarUsuarioUseCase,
   ) {}
 
 // METODO GET, PRA OBTER ALGUM DADO!
@@ -102,6 +103,30 @@ async atualizar(
     fotoUrl: usuario.fotoUrl,
     tipoUsuario: usuario.tipoUsuario,
   };
+}
+
+
+
+
+// metodo delete / apagar / deletar
+
+@Delete(':id')
+@HttpCode(204)
+async desativar(
+  @Param() params: BuscarUsuarioParamDto,
+  @UsuarioAtual() usuarioAtual: UsuarioAutenticado,
+): Promise<void> {
+  /**
+   * Apenas o proprietário da conta
+   * pode solicitar sua desativação.
+   */
+  if (usuarioAtual.id !== params.id) {
+    throw new ForbiddenException(
+      'Você não possui permissão para desativar este usuário.',
+    );
+  }
+
+  await this.desativarUsuarioUseCase.executar(params.id);
 }
 
 }

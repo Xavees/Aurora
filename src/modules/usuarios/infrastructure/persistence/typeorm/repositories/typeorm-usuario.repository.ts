@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
+import { Repository ,  IsNull} from 'typeorm';
 import type { UsuarioRepository } from '../../../../domain/repositories/usuario.repository.js';
 import type { Usuario } from '../../../../domain/entities/usuario.entity.js';
-
 import { UsuarioOrmEntity } from '../entitites/usuario.orm-entity.js';
-
-import type {
-  AtualizarUsuarioData,
-} from '../../../../domain/repositories/usuario.repository.js';
+import type {  AtualizarUsuarioData} from '../../../../domain/repositories/usuario.repository.js';
 
 
 
@@ -81,6 +76,21 @@ export class TypeOrmUsuarioRepository implements UsuarioRepository {
    * o mapeamento da entidade ORM para o domínio.
    */
   return this.buscarPorId(id);
+}
+async desativar(id: string): Promise<boolean> {
+  /**
+   * O softDelete() preenche automaticamente
+   * a coluna excluido_em, sem remover a linha.
+   *
+   * A condição excluidoEm: IsNull() impede que
+   * uma conta já desativada seja alterada novamente.
+   */
+  const resultado = await this.repository.softDelete({
+    id,
+    excluidoEm: IsNull(),
+  });
+
+  return (resultado.affected ?? 0) > 0;
 }
 
 
