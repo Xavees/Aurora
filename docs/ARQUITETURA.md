@@ -123,14 +123,12 @@ Para eventos críticos, **EventEmitter em memória isoladamente não garante ent
 
 
 
-## 10.  Autenticação própria com NestJS e JWT, com suporte a Google OpenID Connect.
+## 10. Docker
 - Data: 27/10/2026
-- Status: substituído
-- Contexto: 
-- Decisão:
-- Alternativas consideradas:
-- Consequências:
-- Responsáveis:
+- Status: Aprovado
+- Contexto: Tive problemas em relação ao ambiente de desenvolvimento, e decidi procurar uma solução
+- Decisão: Utilizar Docker pra componentização do ambiente de desenvolvimento, tornando o viavel em qualquer ambiente
+- Responsáveis: Xavees
 
 
 
