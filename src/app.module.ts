@@ -31,12 +31,12 @@ import { AuthModule } from './modules/auth/auth.module.js';
   controllers: [AppController],
 
   providers: [
-    AppService,
+    AppService,ThrottlerGuard,
 
     // Aplica o limite de requisições globalmente.
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useExisting: ThrottlerGuard,
     },
   ],
 })
