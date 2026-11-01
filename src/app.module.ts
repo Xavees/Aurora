@@ -15,11 +15,11 @@ import { AuthModule } from './modules/auth/auth.module.js';
       isGlobal: true,
     }),
 
-    // Limita a quantidade de requisições por cliente
+    // Limita a quantidade de requisições por cliente.
     ThrottlerModule.forRoot([
       {
-        ttl: 60_000, // Janela de 60 segundos
-        limit: 60,   // Máximo de 60 requisições
+        ttl: 60_000,
+        limit: 60,
       },
     ]),
 
@@ -33,7 +33,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
   providers: [
     AppService,
 
-    // Aplica o ThrottlerGuard globalmente em todas as rotas
+    // Aplica o limite de requisições globalmente.
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

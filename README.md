@@ -34,6 +34,9 @@ Esses conceitos descrevem o domínio do Aurora; a disponibilidade de cada opera�
 | **JWT** | Autenticação por token de acesso |
 | **Argon2id** | Hash e verificação de senhas |
 | **@nestjs/config** | Carregamento da configuração por ambiente |
+| **Docker** | Containerização do ambiente de desenvolvimento |
+| **Docker Compose** | Orquestração dos serviços da aplicação e do banco |
+| **VS Code Dev Containers** | Desenvolvimento em ambiente isolado e padronizado |
 | **Vitest** | Ferramenta de testes definida na base do projeto |
 | **Oxlint e Prettier** | Análise estática e padronização de formatação |
 
@@ -111,7 +114,9 @@ A adoção desses princípios é incremental: a existência de módulos ou class
 
 ### Contratos de dados com DTOs
 
-Os DTOs tornam explícito o formato esperado em cada operação e permitem separar dados de entrada da estrutura das tabelas. A validação em execução complementa a tipagem do TypeScript, que não valida automaticamente o JSON recebido pela API.
+Os DTOs tornam explícito o formato esperado em cada operação e permitem separar dados de entrada da estrutura das tabelas.
+
+A validação em execução complementa a tipagem do TypeScript, que não valida automaticamente o JSON recebido pela API.
 
 Dados controlados pelo servidor, como permissões e propriedade de recursos, devem ser definidos ou verificados pela aplicação.
 
@@ -135,7 +140,15 @@ src/
 │   └── database/
 └── modules/
     ├── auth/
+    │   ├── application/
+    │   ├── domain/
+    │   ├── infrastructure/
+    │   └── presentation/
     └── usuarios/
+        ├── application/
+        ├── domain/
+        ├── infrastructure/
+        └── presentation/
 ```
 
 - **main.ts:** inicialização da aplicação e configuração da camada HTTP.
@@ -157,9 +170,26 @@ As operações de autenticação são organizadas em:
 | `POST` | `/auth/register` | Cadastrar um usuário |
 | `POST` | `/auth/login` | Autenticar e obter um token de acesso |
 
-Os caminhos são relativos à base HTTP configurada na aplicação.
+O módulo de usuários também disponibiliza operações protegidas por autenticação:
 
-As diretrizes de segurança incluem segredos por variáveis de ambiente, validação de entrada e controle de acesso aos recursos. Autenticar um usuário e autorizar uma operação são responsabilidades diferentes: um token válido deve ser acompanhado da verificação de acesso ao dado solicitado.
+| Método | Rota | Finalidade |
+| --- | --- | --- |
+| `GET` | `/usuarios/:id` | Consultar dados do próprio usuário |
+| `PATCH` | `/usuarios/:id` | Atualizar parcialmente o próprio perfil |
+| `DELETE` | `/usuarios/:id` | Solicitar a desativação da própria conta |
+
+As operações protegidas exigem um token JWT válido e verificam se o usuário autenticado possui autorização para acessar ou modificar o recurso solicitado.
+
+A desativação utiliza a abordagem de **soft delete**, permitindo preservar a integridade de relacionamentos que dependem do registro do usuário. A retenção, a anonimização e a eliminação de dados pessoais devem seguir as regras aplicáveis de privacidade e proteção de dados, incluindo a LGPD.
+
+As diretrizes de segurança incluem:
+
+- Segredos e credenciais armazenados em variáveis de ambiente.
+- Validação de dados recebidos pela API.
+- Controle de autenticação e autorização.
+- Limitação de requisições para reduzir abusos.
+- Proteção contra exposição de hashes de senha nas respostas HTTP.
+- Separação entre dados de entrada, regras de negócio e persistência.
 
 Dados como localização, contatos e alertas exigem atenção especial à propriedade dos registros e à exposição nas respostas e nos logs.
 
@@ -171,7 +201,199 @@ O **TypeORM** realiza o mapeamento da aplicação para o esquema existente. A co
 
 As mudanças de esquema devem ser controladas e versionadas. Atualizar uma entidade TypeScript, por si só, não atualiza a estrutura do banco nessa configuração.
 
-## Executando o projeto
+O desenvolvimento containerizado utiliza **MariaDB 10.4.32**, mantendo compatibilidade com o banco utilizado durante a construção inicial do projeto.
+
+## Ambiente de desenvolvimento com Docker
+
+O Aurora Backend disponibiliza um ambiente de desenvolvimento containerizado utilizando **Docker**, **Docker Compose** e **VS Code Dev Containers**.
+
+Essa configuração permite executar a aplicação e o banco de dados em serviços separados, com versões e dependências padronizadas.
+
+A containerização facilita a configuração do projeto por outros integrantes da equipe e reduz diferenças entre ambientes de desenvolvimento.
+
+### Organização dos serviços
+
+O Docker Compose define dois serviços principais:
+
+| Serviço | Responsabilidade |
+| --- | --- |
+| **app** | Ambiente Node.js utilizado para desenvolver e executar a API NestJS |
+| **db** | Servidor MariaDB responsável pela persistência dos dados |
+
+Os serviços compartilham uma rede Docker dedicada, permitindo que a aplicação se conecte ao banco pelo nome do serviço `db`.
+
+### Portas utilizadas
+
+| Serviço | Acesso | Porta |
+| --- | --- | --- |
+| API NestJS | `localhost` | `3000` |
+| MariaDB pelo Windows | `127.0.0.1` | `3307` |
+| MariaDB entre containers | `db` | `3306` |
+
+A porta `3307` é utilizada para o acesso ao banco pelo sistema operacional, evitando conflitos com instalações locais do MySQL ou XAMPP que utilizem a porta `3306`.
+
+Dentro da rede Docker, a aplicação utiliza a porta padrão `3306`.
+
+### Estrutura do ambiente
+
+```text
+.devcontainer/
+├── devcontainer.json
+├── devcontainer-lock.json
+├── docker-compose.yml
+└── Dockerfile
+
+.vscode/
+└── tasks.json
+```
+
+Os arquivos possuem as seguintes responsabilidades:
+
+- **devcontainer.json:** configura o ambiente de desenvolvimento integrado ao VS Code, incluindo extensões e comandos de inicialização.
+- **devcontainer-lock.json:** registra as versões resolvidas dos recursos utilizados pelo Dev Container.
+- **docker-compose.yml:** define os serviços, volumes, portas e rede.
+- **Dockerfile:** define a imagem utilizada pelo ambiente da aplicação.
+- **tasks.json:** disponibiliza tarefas de desenvolvimento no VS Code.
+
+### Persistência e inicialização do banco
+
+O MariaDB utiliza um **volume Docker** para armazenar os dados independentemente do ciclo de vida dos containers.
+
+Isso permite reiniciar ou recriar os containers sem perder automaticamente os registros existentes.
+
+O arquivo `bancodeDadosTemp.sql` é montado no diretório de inicialização do MariaDB e utilizado para preparar o esquema quando o diretório de dados está vazio.
+
+**Importante:** o script de inicialização não é executado novamente sobre um volume já inicializado. Alterações futuras no esquema precisam ser aplicadas por um processo controlado, como migrações de banco de dados.
+
+### Variáveis de ambiente
+
+As configurações sensíveis são mantidas em um arquivo `.env` na raiz do projeto.
+
+Entre as variáveis utilizadas estão:
+
+```dotenv
+# Autenticação
+JWT_SECRET=
+JWT_EXPIRES_IN=15m
+
+# Inicialização do MariaDB
+MYSQL_DATABASE=app_aurora
+MYSQL_USER=
+MYSQL_PASSWORD=
+MYSQL_ROOT_PASSWORD=
+
+# Conexão da API
+DB_USERNAME=
+DB_PASSWORD=
+DB_DATABASE=app_aurora
+```
+
+Os valores de exemplo devem ser substituídos pelas configurações locais adequadas.
+
+No ambiente Docker, o host da conexão é `db` e a porta interna do banco é `3306`, conforme definido no Docker Compose.
+
+**O arquivo `.env` não deve ser versionado**, pois pode conter senhas, tokens e outras informações sensíveis.
+
+### Como iniciar o ambiente
+
+#### 1. Pré-requisitos
+
+Instale:
+
+- Docker Desktop, com o mecanismo de containers Linux disponível.
+- Visual Studio Code.
+- Extensão **Dev Containers**, da Microsoft.
+- Git.
+
+No Windows, o Docker Desktop pode utilizar o backend WSL 2.
+
+#### 2. Preparar o projeto
+
+Clone o repositório:
+
+```bash
+git clone https://github.com/Xavees/Aurora.git
+```
+
+Abra a pasta do projeto no Visual Studio Code e configure o arquivo `.env` na raiz.
+
+#### 3. Abrir o Dev Container
+
+No VS Code, pressione `Ctrl + Shift + P` e execute:
+
+```text
+Dev Containers: Reopen in Container
+```
+
+O VS Code utilizará os arquivos da pasta `.devcontainer` para construir e iniciar o ambiente.
+
+Na primeira inicialização, esse processo pode levar mais tempo devido ao download das imagens, à instalação das dependências e à preparação do banco de dados.
+
+#### 4. Iniciar a API
+
+Após a abertura do ambiente, execute no terminal integrado:
+
+```bash
+npm run start:dev
+```
+
+Com a configuração padrão utilizada no desenvolvimento, a API estará disponível em:
+
+```text
+http://localhost:3000
+```
+
+#### 5. Verificar a aplicação
+
+Para verificar a resposta HTTP da API:
+
+```bash
+curl -i http://localhost:3000/
+```
+
+As rotas protegidas exigem autenticação JWT.
+
+### Comandos úteis do Docker
+
+Os comandos abaixo podem ser executados em um terminal do sistema operacional, na raiz do repositório.
+
+Verificar o estado dos containers:
+
+```bash
+docker ps
+```
+
+Consultar os logs do banco:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml logs db
+```
+
+Consultar os logs do ambiente da aplicação:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml logs app
+```
+
+Reiniciar o serviço do banco:
+
+```bash
+docker compose -f .devcontainer/docker-compose.yml restart db
+```
+
+O Docker Compose também pode ser administrado pela interface do Docker Desktop.
+
+**Atenção:** remover volumes Docker pode apagar permanentemente os dados armazenados no banco. A remoção de volumes não faz parte do procedimento normal de inicialização ou reinicialização.
+
+### Execução sem Docker
+
+O projeto também permite execução local utilizando Node.js e uma instância compatível de MySQL/MariaDB.
+
+Nesse cenário, é necessário configurar as variáveis de ambiente, preparar o esquema do banco e instalar as dependências manualmente.
+
+O ambiente Docker é recomendado para padronizar a configuração entre os integrantes da equipe.
+
+## Executando o projeto sem Dev Container
 
 ### Pré-requisitos
 
@@ -188,7 +410,9 @@ Na raiz do repositório:
 npm install
 ```
 
-Configure o arquivo `.env` de acordo com as chaves lidas pela aplicação. Se houver um `.env.example` no repositório, utilize-o como referência. Credenciais e segredos não devem ser versionados.
+Configure o arquivo `.env` de acordo com as chaves lidas pela aplicação.
+
+Credenciais e segredos não devem ser versionados.
 
 Como a sincronização automática está desativada, prepare o esquema do banco antes de executar operações que dependam das tabelas.
 
@@ -208,7 +432,9 @@ O endereço, a porta e eventuais prefixos da API dependem da configuração HTTP
 
 ## Testes e qualidade
 
-A base do projeto utiliza **Vitest**, **Oxlint** e **Prettier**. Os scripts disponíveis incluem:
+A base do projeto utiliza **Vitest**, **Oxlint** e **Prettier**.
+
+Os scripts disponíveis incluem:
 
 ```bash
 npm run lint
@@ -218,7 +444,13 @@ npm run test:e2e
 
 A execução dos testes depende da configuração e dos recursos necessários a cada suíte. A presença dos scripts não representa uma declaração de cobertura completa.
 
-A separação de responsabilidades favorece testes unitários das regras e dos serviços, testes de integração da persistência e testes de ponta a ponta dos contratos HTTP.
+A separação de responsabilidades favorece:
+
+- **Testes unitários:** verificação isolada de regras e casos de uso.
+- **Testes de integração:** verificação da persistência e comunicação entre componentes.
+- **Testes end-to-end:** validação dos contratos HTTP e fluxos da aplicação.
+
+O ambiente containerizado contribui para a reprodutibilidade dos testes que dependem do banco de dados.
 
 ## Integração com o ecossistema
 
@@ -226,6 +458,14 @@ A comunicação dos clientes com a API utiliza contratos HTTP e dados JSON. Cent
 
 Compartilhar um banco entre aplicações não garante, isoladamente, consistência de validação ou autenticação. As integrações precisam respeitar as mesmas regras de acesso e os mesmos significados dos dados.
 
+A organização modular permite desenvolver novas funcionalidades sem concentrar todas as responsabilidades em um único componente.
+
+O ambiente Docker atua na infraestrutura de desenvolvimento e não altera os contratos de comunicação utilizados pelas aplicações clientes.
+
 ## Contexto acadêmico
 
-O Aurora conecta o desenvolvimento de software à proposta de apoiar a segurança pessoal por meio de tecnologia. As escolhas técnicas valorizam a compreensão do problema, a organização do código e a construção de uma base que possa ser estudada, testada e mantida pela equipe.
+O Aurora conecta o desenvolvimento de software à proposta de apoiar a segurança pessoal por meio de tecnologia.
+
+As escolhas técnicas valorizam a compreensão do problema, a organização do código e a construção de uma base que possa ser estudada, testada e mantida pela equipe.
+
+A utilização de arquitetura modular, padrões de projeto, tipagem estática, autenticação, persistência relacional e containerização também permite aplicar conceitos de Engenharia de Software em um projeto integrado, envolvendo diferentes plataformas e responsabilidades.
