@@ -13,19 +13,36 @@ import { databaseConfig } from './database.config.js';
 
       inject: [ConfigService],
 
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
+      useFactory: (configService: ConfigService) => {
+        const database = configService.getOrThrow<string>(
+          'database.database',
+        );
 
-        host: configService.getOrThrow<string>('database.host'),
-        port: configService.getOrThrow<number>('database.port'),
+        // Proteção contra execução de testes E2E
+        // em um banco diferente do ambiente de testes.
+        if (
+          process.env.NODE_ENV === 'test' &&
+          database !== 'aurora_test'
+        ) {
+          throw new Error(
+            'Testes E2E só podem utilizar o banco aurora_test.',
+          );
+        }
 
-        username: configService.getOrThrow<string>('database.username'),
-        password: configService.getOrThrow<string>('database.password'),
-        database: configService.getOrThrow<string>('database.database'),
+        return {
+          type: 'mysql' as const,
 
-        autoLoadEntities: true,
-        synchronize: false,
-      }),
+          host: configService.getOrThrow<string>('database.host'),
+          port: configService.getOrThrow<number>('database.port'),
+
+          username: configService.getOrThrow<string>('database.username'),
+          password: configService.getOrThrow<string>('database.password'),
+          database,
+
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
     }),
   ],
 })
