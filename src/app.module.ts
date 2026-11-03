@@ -8,6 +8,9 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware.js';
+import type { NestModule, MiddlewareConsumer } from '@nestjs/common';
+
 
 @Module({
   imports: [
@@ -40,4 +43,10 @@ import { AuthModule } from './modules/auth/auth.module.js';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(RequestLoggerMiddleware)
+      .forRoutes('*');
+  }
+}
