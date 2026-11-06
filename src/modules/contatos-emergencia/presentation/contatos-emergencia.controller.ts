@@ -19,7 +19,7 @@ import { ContatoResponseDto } from './http/contato-response.dto.js';
 import { AtualizarContatoDto } from './http/atualizar-contato.dto.js';
 import { UsuarioAtual } from '../../auth/presentation/http/decorators/usuario-atual.decorator.js';
 import type { UsuarioAutenticado } from '../../auth/domain/entitites/usuario-autenticado.entity.js';
-
+import { PositiveBigIntPipe } from '../../../common/pipes/positive-bigint.pipe.js';
 
 @Controller('contatos-emergencia')
 @UseGuards(JwtAuthGuard)
@@ -59,7 +59,7 @@ export class ContatosEmergenciaController {
 
   @Patch(':id')
   async atualizar(
-    @Param('id') contatoId: string,
+    @Param('id', PositiveBigIntPipe) contatoId: string,
     @UsuarioAtual() usuario: UsuarioAutenticado,
     @Body() dados: AtualizarContatoDto,
   ): Promise<ContatoResponseDto> {
@@ -75,7 +75,7 @@ export class ContatosEmergenciaController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remover(
-    @Param('id') contatoId: string,
+    @Param('id', PositiveBigIntPipe) contatoId: string,
     @UsuarioAtual() usuario: UsuarioAutenticado,
   ): Promise<void> {
     await this.removerContato.executar(contatoId, usuario.id);
