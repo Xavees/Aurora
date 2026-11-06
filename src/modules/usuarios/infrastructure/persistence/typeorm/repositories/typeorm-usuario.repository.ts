@@ -1,13 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository ,  IsNull} from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import type { UsuarioRepository } from '../../../../domain/repositories/usuario.repository.js';
 import type { Usuario } from '../../../../domain/entities/usuario.entity.js';
-import { UsuarioOrmEntity } from '../entitites/usuario.orm-entity.js';
-import type {  AtualizarUsuarioData} from '../../../../domain/repositories/usuario.repository.js';
-
-
-
+import { UsuarioOrmEntity } from '../entities/usuario.orm-entity.js';
+import type { AtualizarUsuarioData } from '../../../../domain/repositories/usuario.repository.js';
 
 @Injectable()
 export class TypeOrmUsuarioRepository implements UsuarioRepository {
@@ -36,68 +33,60 @@ export class TypeOrmUsuarioRepository implements UsuarioRepository {
   }
 
   async atualizar(
-  id: string,
-  dados: AtualizarUsuarioData,
-): Promise<Usuario | null> {
-  /**
-   * Buscamos a entidade para verificar se o usuário
-   * realmente existe antes de atualizar.
-   */
-  const usuario = await this.repository.findOne({
-    where: { id },
-  });
+    id: string,
+    dados: AtualizarUsuarioData,
+  ): Promise<Usuario | null> {
+    /**
+     * Buscamos a entidade para verificar se o usuário
+     * realmente existe antes de atualizar.
+     */
+    const usuario = await this.repository.findOne({
+      where: { id },
+    });
 
-  if (!usuario) {
-    return null;
+    if (!usuario) {
+      return null;
+    }
+
+    /**
+     * Aplicamos somente os campos enviados.
+     *
+     * undefined significa que o campo não deve
+     * ser alterado.
+     */
+    if (dados.nome !== undefined) {
+      usuario.nome = dados.nome;
+    }
+
+    if (dados.telefone !== undefined) {
+      usuario.telefone = dados.telefone;
+    }
+
+    if (dados.fotoUrl !== undefined) {
+      usuario.fotoUrl = dados.fotoUrl;
+    }
+
+    await this.repository.save(usuario);
+
+    /**
+     * Reutilizamos a consulta existente para manter
+     * o mapeamento da entidade ORM para o domínio.
+     */
+    return this.buscarPorId(id);
   }
+  async desativar(id: string): Promise<boolean> {
+    /**
+     * O softDelete() preenche automaticamente
+     * a coluna excluido_em, sem remover a linha.
+     *
+     * A condição excluidoEm: IsNull() impede que
+     * uma conta já desativada seja alterada novamente.
+     */
+    const resultado = await this.repository.softDelete({
+      id,
+      excluidoEm: IsNull(),
+    });
 
-  /**
-   * Aplicamos somente os campos enviados.
-   *
-   * undefined significa que o campo não deve
-   * ser alterado.
-   */
-  if (dados.nome !== undefined) {
-    usuario.nome = dados.nome;
+    return (resultado.affected ?? 0) > 0;
   }
-
-  if (dados.telefone !== undefined) {
-    usuario.telefone = dados.telefone;
-  }
-
-  if (dados.fotoUrl !== undefined) {
-    usuario.fotoUrl = dados.fotoUrl;
-  }
-
-  await this.repository.save(usuario);
-
-  /**
-   * Reutilizamos a consulta existente para manter
-   * o mapeamento da entidade ORM para o domínio.
-   */
-  return this.buscarPorId(id);
-}
-async desativar(id: string): Promise<boolean> {
-  /**
-   * O softDelete() preenche automaticamente
-   * a coluna excluido_em, sem remover a linha.
-   *
-   * A condição excluidoEm: IsNull() impede que
-   * uma conta já desativada seja alterada novamente.
-   */
-  const resultado = await this.repository.softDelete({
-    id,
-    excluidoEm: IsNull(),
-  });
-
-  return (resultado.affected ?? 0) > 0;
-}
-
-
-
-
-
-
-
-
 }

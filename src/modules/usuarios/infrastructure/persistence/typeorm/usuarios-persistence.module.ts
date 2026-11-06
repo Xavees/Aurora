@@ -1,16 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { UsuarioOrmEntity } from './entitites/usuario.orm-entity.js';
+import { UsuarioOrmEntity } from './entities/usuario.orm-entity.js';
 
 import { TypeOrmUsuarioRepository } from './repositories/typeorm-usuario.repository.js';
 
 import { USUARIO_REPOSITORY } from '../../../domain/repositories/usuario.repository.token.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UsuarioOrmEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([UsuarioOrmEntity])],
 
   providers: [
     {
@@ -19,8 +17,6 @@ import { USUARIO_REPOSITORY } from '../../../domain/repositories/usuario.reposit
     },
   ],
 
-  exports: [
-    USUARIO_REPOSITORY,
-  ],
+  exports: [USUARIO_REPOSITORY],
 })
 export class UsuariosPersistenceModule {}

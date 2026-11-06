@@ -10,7 +10,7 @@ import type {
 } from '../../../../domain/repositories/auth.repository.js';
 import type { CredencialUsuario } from '../../../../domain/entitites/credencial-usuario.entity.js';
 
-import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entitites/usuario.orm-entity.js';
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 @Injectable()
 export class TypeOrmAuthRepository implements AuthRepository {
@@ -39,51 +39,41 @@ export class TypeOrmAuthRepository implements AuthRepository {
     };
   }
 
- async criarUsuario(dados: CriarUsuarioData): Promise<string> {
-  const novoUsuario = this.repository.create({
-    nome: dados.nome,
-    email: dados.email,
-    senha: dados.senhaHash,
-    firebaseUid: null,
-  });
+  async criarUsuario(dados: CriarUsuarioData): Promise<string> {
+    const novoUsuario = this.repository.create({
+      nome: dados.nome,
+      email: dados.email,
+      senha: dados.senhaHash,
+      firebaseUid: null,
+    });
 
-  try {
-    const usuarioSalvo = await this.repository.save(novoUsuario);
+    try {
+      const usuarioSalvo = await this.repository.save(novoUsuario);
 
-    return usuarioSalvo.id;
-  } catch (error: unknown) {
-    /**
-     * O MySQL utiliza o código 1062 (ER_DUP_ENTRY)
-     * quando uma restrição UNIQUE é violada.
-     *
-     * Tratamos esse erro sem retornar mensagens
-     * internas do banco ao cliente.
-     */
-    if (error instanceof QueryFailedError) {
-      const driverError = error.driverError as {
-        code?: string;
-        errno?: number;
-      };
+      return usuarioSalvo.id;
+    } catch (error: unknown) {
+      /**
+       * O MySQL utiliza o código 1062 (ER_DUP_ENTRY)
+       * quando uma restrição UNIQUE é violada.
+       *
+       * Tratamos esse erro sem retornar mensagens
+       * internas do banco ao cliente.
+       */
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError as {
+          code?: string;
+          errno?: number;
+        };
 
-      if (
-        driverError.code === 'ER_DUP_ENTRY' ||
-        driverError.errno === 1062
-      ) {
-        throw new ConflictException(
-          'Já existe um cadastro com um dos dados informados.',
-        );
+        if (driverError.code === 'ER_DUP_ENTRY' || driverError.errno === 1062) {
+          throw new ConflictException(
+            'Já existe um cadastro com um dos dados informados.',
+          );
+        }
       }
+
+      // Erros desconhecidos seguem para o filtro global.
+      throw error;
     }
-
-    // Erros desconhecidos seguem para o filtro global.
-    throw error;
   }
-}
-
-
-
-
-
-
-
 }

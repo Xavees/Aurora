@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { UsuarioOrmEntity } from '../usuarios/infrastructure/persistence/typeorm/entitites/usuario.orm-entity.js';
+import { UsuarioOrmEntity } from '../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 import { AUTH_REPOSITORY } from './domain/repositories/auth.repository.token.js';
 import { PASSWORD_HASHER } from './application/services/password-hasher.token.js';
@@ -22,7 +22,8 @@ import { UsuariosPersistenceModule } from '../usuarios/infrastructure/persistenc
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UsuarioOrmEntity]), UsuariosPersistenceModule ,
+    TypeOrmModule.forFeature([UsuarioOrmEntity]),
+    UsuariosPersistenceModule,
 
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -30,9 +31,7 @@ import { UsuariosPersistenceModule } from '../usuarios/infrastructure/persistenc
         const secret = configService.get<string>('JWT_SECRET');
 
         if (!secret || secret.length < 32) {
-          throw new Error(
-            'JWT_SECRET deve conter pelo menos 32 caracteres.',
-          );
+          throw new Error('JWT_SECRET deve conter pelo menos 32 caracteres.');
         }
 
         return {
@@ -72,9 +71,6 @@ import { UsuariosPersistenceModule } from '../usuarios/infrastructure/persistenc
   ],
 
   // Compartilhamos o Guard e o módulo JWT com outros módulos.
-  exports: [
-    JwtModule,
-    JwtAuthGuard,
-  ],
+  exports: [JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}

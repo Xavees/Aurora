@@ -1,10 +1,9 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConflictException } from '@nestjs/common';
 import { QueryFailedError, Repository } from 'typeorm';
 
 import { TypeOrmAuthRepository } from './typeorm-auth.repository.js';
-import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entitites/usuario.orm-entity.js';
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 describe('TypeOrmAuthRepository', () => {
   let authRepository: TypeOrmAuthRepository;
@@ -36,9 +35,7 @@ describe('TypeOrmAuthRepository', () => {
       senha: dadosCadastro.senhaHash,
     });
 
-    const resultado = await authRepository.buscarPorEmail(
-      dadosCadastro.email,
-    );
+    const resultado = await authRepository.buscarPorEmail(dadosCadastro.email);
 
     expect(resultado).toEqual({
       id: '1',
@@ -125,9 +122,7 @@ describe('TypeOrmAuthRepository', () => {
 
     repositoryMock.save.mockRejectedValue(erro);
 
-    await expect(
-      authRepository.criarUsuario(dadosCadastro),
-    ).rejects.toBe(erro);
+    await expect(authRepository.criarUsuario(dadosCadastro)).rejects.toBe(erro);
   });
 
   it('deve propagar QueryFailedError que não seja duplicidade', async () => {
@@ -142,8 +137,6 @@ describe('TypeOrmAuthRepository', () => {
 
     repositoryMock.save.mockRejectedValue(erro);
 
-    await expect(
-      authRepository.criarUsuario(dadosCadastro),
-    ).rejects.toBe(erro);
+    await expect(authRepository.criarUsuario(dadosCadastro)).rejects.toBe(erro);
   });
 });
