@@ -1,0 +1,3 @@
+export const MEMBRO_CIRCULO_REPOSITORY = Symbol(
+  'MEMBRO_CIRCULO_REPOSITORY',
+);

@@ -1,0 +1,1 @@
+export const CIRCULO_REPOSITORY = Symbol('CIRCULO_REPOSITORY');

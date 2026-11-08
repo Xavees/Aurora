@@ -12,6 +12,7 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { ContatosEmergenciaModule } from './modules/contatos-emergencia/contatos-emergencia.module.js';
 import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware.js';
+import { CirculosModule } from './modules/circulos/circulos.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RequestLoggerMiddleware } from './common/middlewares/request-logger.mid
     UsuariosModule,
     AuthModule,
     ContatosEmergenciaModule,
+    CirculosModule,
   ],
 
   controllers: [AppController],
