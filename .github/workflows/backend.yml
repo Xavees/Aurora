@@ -51,15 +51,11 @@ jobs:
 
       - name: Executar testes unitários
         run: npm test
-
       - name: Importar estrutura do banco de testes
         env:
           MYSQL_PWD: root-ci-only
         run: |
-          docker exec -i \
-            -e MYSQL_PWD="$MYSQL_PWD" \
-            "${{ job.services.db.id }}" \
-            mysql -uroot aurora_test < bancodeDadosTemp.sql
+          docker exec -i -e MYSQL_PWD="$MYSQL_PWD" "${{ job.services.db.id }}" mysql -uroot aurora_test < bancodeDadosTemp.sql
 
       - name: Validar estrutura do banco de testes
         env:
