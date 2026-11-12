@@ -62,6 +62,7 @@ Use este documento para registrar **o que foi decidido, por quê, alternativas e
 
 
 
+
 ## DT-009 — Exclusão logica de usuarios 
 - Data: 26/10/2026
 - Status: aprovado
@@ -79,7 +80,28 @@ Use este documento para registrar **o que foi decidido, por quê, alternativas e
 - Responsáveis: Xavees
 
 
-```
+
+
+
+
+
+
+
+
+
+
+## DIVIDA TECNICA-001 — Avisos Oxlint
+- Data: 12/11/2026
+- Status:  aprovado |
+- Contexto: Preciso fazer alterações nos codigos de teste porque alguns testes utilizam throw dentro de um bloco finally
+- Decisão: Por Conta de Tempo, decidi focar nas funcionalidades e aperfeiçoar testes posteriormentes
+- Responsáveis: Xavees
+
+
+
+
+
+
 
 
 
