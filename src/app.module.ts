@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ContatosEmergenciaModule } from './modules/contatos-emergencia/contatos-emergencia.module.js';
 import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware.js';
 import { CirculosModule } from './modules/circulos/circulos.module.js';
+import { HistoricoLocalizacaoModule } from './modules/historico-localizacao/historico-localizacao.module.js';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CirculosModule } from './modules/circulos/circulos.module.js';
     AuthModule,
     ContatosEmergenciaModule,
     CirculosModule,
+    HistoricoLocalizacaoModule,
   ],
 
   controllers: [AppController],
