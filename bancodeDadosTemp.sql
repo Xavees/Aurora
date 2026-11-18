@@ -1,4 +1,8 @@
-/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: app_aurora
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB-1:10.4.32+maria~ubu2004
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -10,9 +14,14 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `alerta_sos`
+--
+
 DROP TABLE IF EXISTS `alerta_sos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `alerta_sos` (
   `id_alerta` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária do alerta de emergência',
   `data_hora_inicio` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Data e hora do disparo do SOS',
@@ -30,9 +39,14 @@ CREATE TABLE `alerta_sos` (
   CONSTRAINT `fk_alerta_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Histórico e status dos alertas de emergência (SOS)';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `area_de_risco`
+--
+
 DROP TABLE IF EXISTS `area_de_risco`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `area_de_risco` (
   `id_area_risco` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária do perímetro de risco',
   `nome_area` varchar(100) NOT NULL COMMENT 'Nome identificador da zona (ex: Travessia Iluminada Inoperante)',
@@ -49,9 +63,14 @@ CREATE TABLE `area_de_risco` (
   CONSTRAINT `fk_area_risco_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Mapeamento colaborativo de áreas urbanas de risco';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bloqueio_circulo`
+--
+
 DROP TABLE IF EXISTS `bloqueio_circulo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `bloqueio_circulo` (
   `id_bloqueio` bigint(20) NOT NULL AUTO_INCREMENT,
   `fk_circulo_id_circulo` bigint(20) NOT NULL,
@@ -67,9 +86,14 @@ CREATE TABLE `bloqueio_circulo` (
   CONSTRAINT `fk_bloqueio_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `circulo`
+--
+
 DROP TABLE IF EXISTS `circulo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `circulo` (
   `id_circulo` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária do círculo de compartilhamento',
   `codigo_convite` varchar(10) NOT NULL COMMENT 'Código alfanumérico único para entrada no grupo',
@@ -80,9 +104,14 @@ CREATE TABLE `circulo` (
   UNIQUE KEY `codigo_convite` (`codigo_convite`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Círculos privados de acompanhamento de segurança';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `contato_de_emergencia`
+--
+
 DROP TABLE IF EXISTS `contato_de_emergencia`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `contato_de_emergencia` (
   `id_contato` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária do contato de emergência',
   `nome` varchar(100) NOT NULL COMMENT 'Nome completo do contato de confiança',
@@ -94,9 +123,14 @@ CREATE TABLE `contato_de_emergencia` (
   CONSTRAINT `fk_contato_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Contatos de emergência acionados em eventos SOS';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `dispositivo_embarcado`
+--
+
 DROP TABLE IF EXISTS `dispositivo_embarcado`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `dispositivo_embarcado` (
   `id_dispositivo` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária interna do dispositivo',
   `mac_address` varchar(64) NOT NULL COMMENT 'Endereço físico MAC do ESP32 (device_uid)',
@@ -116,9 +150,60 @@ CREATE TABLE `dispositivo_embarcado` (
   CONSTRAINT `fk_dispositivo_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cadastro e status dos rastreadores ESP32';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `endereco`
+--
+
+DROP TABLE IF EXISTS `endereco`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `endereco` (
+  `id_endereco` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primria do endereo',
+  `fk_usuario_id_usuario` bigint(20) NOT NULL COMMENT 'Usurio proprietrio do endereo',
+  `apelido` varchar(50) NOT NULL COMMENT 'Ex: Casa, Trabalho, Faculdade',
+  `cep` varchar(8) DEFAULT NULL,
+  `logradouro` varchar(150) NOT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `complemento` varchar(100) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `cidade` varchar(100) NOT NULL,
+  `estado` char(2) NOT NULL,
+  `latitude` decimal(10,7) DEFAULT NULL,
+  `longitude` decimal(11,7) DEFAULT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `data_atualizacao` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_endereco`),
+  KEY `idx_endereco_usuario` (`fk_usuario_id_usuario`),
+  CONSTRAINT `fk_endereco_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Endereos e locais de confiana cadastrados pelo usurio';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `endereco_circulo`
+--
+
+DROP TABLE IF EXISTS `endereco_circulo`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `endereco_circulo` (
+  `fk_endereco_id_endereco` bigint(20) NOT NULL,
+  `fk_circulo_id_circulo` bigint(20) NOT NULL,
+  `data_compartilhamento` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`fk_endereco_id_endereco`,`fk_circulo_id_circulo`),
+  KEY `idx_endereco_circulo_circulo` (`fk_circulo_id_circulo`),
+  CONSTRAINT `fk_endereco_circulo_circulo` FOREIGN KEY (`fk_circulo_id_circulo`) REFERENCES `circulo` (`id_circulo`) ON DELETE CASCADE,
+  CONSTRAINT `fk_endereco_circulo_endereco` FOREIGN KEY (`fk_endereco_id_endereco`) REFERENCES `endereco` (`id_endereco`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Compartilhamento de endereos com crculos autorizados';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `historico_localizacao`
+--
+
 DROP TABLE IF EXISTS `historico_localizacao`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `historico_localizacao` (
   `id_localizacao` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Chave primária da leitura de telemetria',
   `fk_dispositivo_id_dispositivo` bigint(20) DEFAULT NULL COMMENT 'Chave estrangeira do dispositivo emissor (se enviado via hardware)',
@@ -139,11 +224,16 @@ CREATE TABLE `historico_localizacao` (
   KEY `fk_historico_dispositivo` (`fk_dispositivo_id_dispositivo`),
   CONSTRAINT `fk_historico_dispositivo` FOREIGN KEY (`fk_dispositivo_id_dispositivo`) REFERENCES `dispositivo_embarcado` (`id_dispositivo`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_historico_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Histórico de telemetria e posições do usuário e hardware';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Histórico de telemetria e posições do usuário e hardware';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `membro_do_circulo`
+--
+
 DROP TABLE IF EXISTS `membro_do_circulo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `membro_do_circulo` (
   `id_membro` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária do registro do membro',
   `funcao` enum('ADMINISTRADOR','MEMBRO') NOT NULL DEFAULT 'MEMBRO',
@@ -158,9 +248,14 @@ CREATE TABLE `membro_do_circulo` (
   CONSTRAINT `fk_membro_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Associação N:M entre Usuários e Círculos';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `mensagem`
+--
+
 DROP TABLE IF EXISTS `mensagem`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `mensagem` (
   `id_chat_texto` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária da mensagem',
   `tipo_mensagem` enum('TEXTO','AUDIO','IMAGEM') NOT NULL DEFAULT 'TEXTO' COMMENT 'Tipo do conteúdo enviado',
@@ -181,9 +276,14 @@ CREATE TABLE `mensagem` (
   CONSTRAINT `fk_mensagem_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Histórico de mensagens de texto e áudio da rede de segurança';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notifica`
+--
+
 DROP TABLE IF EXISTS `notifica`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notifica` (
   `fk_alerta_sos_id_alerta` bigint(20) NOT NULL COMMENT 'Chave estrangeira do alerta SOS ativo',
   `fk_circulo_id_circulo` bigint(20) NOT NULL COMMENT 'Chave estrangeira do círculo de acompanhamento notificado',
@@ -193,9 +293,14 @@ CREATE TABLE `notifica` (
   CONSTRAINT `fk_notifica_circulo` FOREIGN KEY (`fk_circulo_id_circulo`) REFERENCES `circulo` (`id_circulo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Associação N:M para distribuição de alertas SOS em Círculos';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ocorrencia`
+--
+
 DROP TABLE IF EXISTS `ocorrencia`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ocorrencia` (
   `id_ocorrencia` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária da ocorrência criminal',
   `descricao` text NOT NULL COMMENT 'Relato detalhado do incidente reportado',
@@ -209,9 +314,14 @@ CREATE TABLE `ocorrencia` (
   CONSTRAINT `fk_ocorrencia_usuario` FOREIGN KEY (`fk_usuario_id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Registro colaborativo de ocorrências policiais e assaltos';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `usuario`
+--
+
 DROP TABLE IF EXISTS `usuario`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `usuario` (
   `id_usuario` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Chave primária interna do usuário',
   `firebase_uid` varchar(128) DEFAULT NULL COMMENT 'Identificador único do Firebase Auth (Google / E-mail)',
@@ -228,6 +338,10 @@ CREATE TABLE `usuario` (
   UNIQUE KEY `telefone` (`telefone`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tabela principal de usuários do aplicativo';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping routines for database 'app_aurora'
+--
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -238,3 +352,4 @@ CREATE TABLE `usuario` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+-- Dump completed on 2026-11-18 13:29:36
