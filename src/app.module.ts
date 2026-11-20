@@ -4,7 +4,6 @@ import type { NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-
 import { DatabaseModule } from './config/database/database.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -14,6 +13,7 @@ import { ContatosEmergenciaModule } from './modules/contatos-emergencia/contatos
 import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware.js';
 import { CirculosModule } from './modules/circulos/circulos.module.js';
 import { HistoricoLocalizacaoModule } from './modules/historico-localizacao/historico-localizacao.module.js';
+import { AreasRiscoModule } from './modules/areas-risco/areas-risco.module.js';
 
 @Module({
   imports: [
@@ -35,6 +35,7 @@ import { HistoricoLocalizacaoModule } from './modules/historico-localizacao/hist
     ContatosEmergenciaModule,
     CirculosModule,
     HistoricoLocalizacaoModule,
+    AreasRiscoModule,
   ],
 
   controllers: [AppController],

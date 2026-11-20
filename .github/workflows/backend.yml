@@ -83,7 +83,7 @@ jobs:
           echo "Tabelas encontradas: $TABLES"
           echo "Chaves estrangeiras encontradas: $FOREIGN_KEYS"
 
-          if [ "$TABLES" -ne 14 ] || [ "$FOREIGN_KEYS" -ne 21 ]; then
+          if [ "$TABLES" -ne 14 ] || [ "$FOREIGN_KEYS" -ne 22 ]; then
             echo "::error::Estrutura do banco de testes incompleta."
             exit 1
           fi
