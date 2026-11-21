@@ -31,7 +31,8 @@ import { databaseConfig } from './database.config.js';
 
         return {
           type: 'mysql' as const,
-
+          supportBigNumbers: true,
+          bigNumberStrings: true,
           host: configService.getOrThrow<string>('database.host'),
           port: configService.getOrThrow<number>('database.port'),
 
