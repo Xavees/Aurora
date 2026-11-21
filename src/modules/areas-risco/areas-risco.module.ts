@@ -12,6 +12,9 @@ import { ListarAreasRiscoUseCase } from './application/use-cases/listar-areas-ri
 import { BuscarAreaRiscoPorIdUseCase } from './application/use-cases/buscar-area-risco-por-id.use-case.js';
 
 import { AreasRiscoController } from './presentation/areas-risco.controller.js';
+import { CriarAreaRiscoUseCase } from './application/use-cases/criar-area-risco.use-case.js';
+import { AtualizarAreaRiscoUseCase } from './application/use-cases/atualizar-area-risco.use-case.js';
+import { ExcluirAreaRiscoUseCase } from './application/use-cases/excluir-area-risco.use-case.js';
 
 /**
  * Módulo principal da funcionalidade Áreas de Risco.
@@ -39,6 +42,9 @@ import { AreasRiscoController } from './presentation/areas-risco.controller.js';
   providers: [
     ListarAreasRiscoUseCase,
     BuscarAreaRiscoPorIdUseCase,
+    CriarAreaRiscoUseCase,
+    AtualizarAreaRiscoUseCase,
+    ExcluirAreaRiscoUseCase,
   ],
 })
 export class AreasRiscoModule {}

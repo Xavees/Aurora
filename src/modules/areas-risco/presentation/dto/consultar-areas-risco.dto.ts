@@ -7,6 +7,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import type { NivelRisco } from '../../domain/entities/area-risco.entity.js';
 
@@ -23,6 +24,11 @@ export class ConsultarAreasRiscoDto {
    * Quando não informado, a consulta não restringe
    * os resultados por nível.
    */
+  @ApiPropertyOptional({
+    description: 'Filtra as áreas pelo nível de risco.',
+    enum: ['BAIXO', 'MEDIO', 'ALTO'],
+    example: 'ALTO',
+  })
   @IsOptional()
   @IsIn(['BAIXO', 'MEDIO', 'ALTO'])
   nivelRisco?: NivelRisco;
@@ -33,6 +39,13 @@ export class ConsultarAreasRiscoDto {
    * O Query Parameter chega como string pela URL.
    * O @Type converte o valor para number antes da validação.
    */
+  @ApiPropertyOptional({
+    description: 'Número da página solicitada.',
+    example: 1,
+    default: 1,
+    minimum: 1,
+    type: Number,
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -44,6 +57,14 @@ export class ConsultarAreasRiscoDto {
    * Limitamos a 100 para evitar consultas excessivamente
    * grandes a partir de uma única requisição.
    */
+  @ApiPropertyOptional({
+    description: 'Quantidade máxima de registros por página.',
+    example: 20,
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+    type: Number,
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1)

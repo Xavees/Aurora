@@ -36,6 +36,10 @@ const area: AreaRisco = {
   const repository = {
     listar: vi.fn<AreaRiscoRepository['listar']>(),
     buscarPorId: vi.fn<AreaRiscoRepository['buscarPorId']>(),
+    criar: vi.fn<AreaRiscoRepository['criar']>(),
+    buscarPorIdParaEdicao: vi.fn<AreaRiscoRepository['buscarPorIdParaEdicao']>(),
+    atualizar: vi.fn<AreaRiscoRepository['atualizar']>(),
+    excluir: vi.fn<AreaRiscoRepository['excluir']>(),
   };
   beforeEach(() => vi.resetAllMocks());
   const useCase = new ListarAreasRiscoUseCase(repository);

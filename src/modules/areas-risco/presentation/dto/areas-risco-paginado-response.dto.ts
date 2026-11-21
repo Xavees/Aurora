@@ -1,4 +1,6 @@
 
+import { ApiProperty } from '@nestjs/swagger';
+
 import type { ResultadoAreasRisco } from '../../domain/repositories/area-risco.repository.js';
 
 import { AreaRiscoResponseDto } from './area-risco-response.dto.js';
@@ -8,11 +10,39 @@ import { AreaRiscoResponseDto } from './area-risco-response.dto.js';
  * de áreas de risco.
  */
 export class AreasRiscoPaginadoResponseDto {
+  @ApiProperty({
+    description: 'Áreas verificadas encontradas na página atual.',
+    type: () => AreaRiscoResponseDto,
+    isArray: true,
+  })
   registros!: AreaRiscoResponseDto[];
 
+  @ApiProperty({
+    description: 'Quantidade total de registros encontrados.',
+    example: 45,
+    minimum: 0,
+  })
   total!: number;
+
+  @ApiProperty({
+    description: 'Número da página atual.',
+    example: 2,
+    minimum: 1,
+  })
   pagina!: number;
+
+  @ApiProperty({
+    description: 'Quantidade máxima de registros por página.',
+    example: 20,
+    minimum: 1,
+  })
   limite!: number;
+
+  @ApiProperty({
+    description: 'Quantidade total de páginas disponíveis.',
+    example: 3,
+    minimum: 0,
+  })
   totalPaginas!: number;
 
   /**
@@ -32,8 +62,8 @@ export class AreasRiscoPaginadoResponseDto {
     dto.pagina = resultado.pagina;
     dto.limite = resultado.limite;
 
-    // Arredondamos para cima porque uma página pode
-    // conter menos registros que o limite solicitado.
+    // Arredondamos para cima porque a última página
+    // pode conter menos registros que o limite solicitado.
     dto.totalPaginas = Math.ceil(
       resultado.total / resultado.limite,
     );
