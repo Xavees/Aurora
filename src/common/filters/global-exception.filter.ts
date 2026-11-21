@@ -57,12 +57,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (!isHttpException) {
-      // O erro completo fica apenas no log interno
-      this.logger.error(
-        'Erro inesperado durante a requisição.',
-        exception instanceof Error ? exception.stack : String(exception),
-      );
-    }
+  this.logger.error(
+    'Erro inesperado durante a requisição.',
+    exception instanceof Error ? exception.stack : String(exception),
+  );
+
+  // DIAGNÓSTICO TEMPORÁRIO:
+  // Exibe a exceção original no terminal do Vitest.
+  if (process.env.NODE_ENV === 'test') {
+    console.error('[AURORA E2E] Erro original:', exception);
+  }
+
+
+}
 
     response.status(statusCode).json({
       statusCode,

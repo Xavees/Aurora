@@ -68,3 +68,27 @@ export interface AreaRisco {
 
   usuarioId: string | null;
 }
+
+
+/**
+ * Dados necessários para cadastrar uma área
+ * de risco colaborativa.
+ *
+ * A origem, o status e os dados de moderação
+ * são definidos pelo backend, nunca pelo cliente.
+ */
+export interface DadosCriacaoAreaRisco {
+  nome: string;
+  descricao: string | null;
+  nivelRisco: NivelRisco | null;
+
+  latitude: number;
+  longitude: number;
+  raioMetros: number | null;
+
+  /**
+   * Identificador do usuário autenticado,
+   * extraído do JWT pelo backend.
+   */
+  usuarioId: string;
+}

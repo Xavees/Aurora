@@ -39,6 +39,7 @@ Esses conceitos descrevem o domínio do Aurora; a disponibilidade de cada opera�
 | **VS Code Dev Containers** | Desenvolvimento em ambiente isolado e padronizado |
 | **Vitest** | Ferramenta de testes definida na base do projeto |
 | **Oxlint e Prettier** | Análise estática e padronização de formatação |
+| **Swagger** |é um conjunto de ferramentas de código aberto e comerciais para projetar, documentar, testar e consumir APIs REST |
 
 O projeto utiliza módulos **ESM** e resolução **NodeNext**. Nesse modelo, imports relativos podem utilizar a extensão `.js` no código TypeScript para corresponder aos arquivos gerados no build.
 
