@@ -1,26 +1,23 @@
+
 import {
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
-import type { UsuarioRepository } from '../../domain/repositories/usuario.repository.js';
+import type { DesativarUsuarioTransacionalRepository } from '../../domain/repositories/desativar-usuario-transacional.repository.js';
 
-import { USUARIO_REPOSITORY } from '../../domain/repositories/usuario.repository.token.js';
+import { DESATIVAR_USUARIO_TRANSACIONAL_REPOSITORY } from '../../domain/repositories/desativar-usuario-transacional.repository.token.js';
 
 @Injectable()
 export class DesativarUsuarioUseCase {
   constructor(
-    @Inject(USUARIO_REPOSITORY)
-    private readonly usuarioRepository: UsuarioRepository,
+    @Inject(DESATIVAR_USUARIO_TRANSACIONAL_REPOSITORY)
+    private readonly desativarUsuarioRepository: DesativarUsuarioTransacionalRepository,
   ) {}
 
   async executar(id: string): Promise<void> {
-    /**
-     * O caso de uso não conhece TypeORM ou SQL.
-     * Ele utiliza somente o contrato do repositório.
-     */
-    const desativado = await this.usuarioRepository.desativar(id);
+    const desativado = await this.desativarUsuarioRepository.desativar(id);
 
     if (!desativado) {
       throw new NotFoundException(

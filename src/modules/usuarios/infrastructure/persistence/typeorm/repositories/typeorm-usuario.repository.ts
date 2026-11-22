@@ -5,6 +5,9 @@ import type { UsuarioRepository } from '../../../../domain/repositories/usuario.
 import type { Usuario } from '../../../../domain/entities/usuario.entity.js';
 import { UsuarioOrmEntity } from '../entities/usuario.orm-entity.js';
 import type { AtualizarUsuarioData } from '../../../../domain/repositories/usuario.repository.js';
+import { ConflictException } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
+
 
 @Injectable()
 export class TypeOrmUsuarioRepository implements UsuarioRepository {
@@ -66,7 +69,37 @@ export class TypeOrmUsuarioRepository implements UsuarioRepository {
       usuario.fotoUrl = dados.fotoUrl;
     }
 
-    await this.repository.save(usuario);
+
+try {
+  await this.repository.save(usuario);
+} catch (erro: unknown) {
+  /**
+   * O MariaDB utiliza ER_DUP_ENTRY para indicar
+   * violação de uma restrição UNIQUE.
+   *
+   * Também verificamos o nome da restrição para
+   * não tratar duplicidade de e-mail ou outro campo
+   * como se fosse um conflito de telefone.
+   */
+  if (erro instanceof QueryFailedError) {
+    const driverError = erro.driverError as {
+      code?: string;
+      errno?: number;
+      sqlMessage?: string;
+    };
+
+    const telefoneDuplicado =
+      (driverError.code === 'ER_DUP_ENTRY' ||
+        driverError.errno === 1062) &&
+      driverError.sqlMessage?.includes("for key 'telefone'")
+    if (telefoneDuplicado) {
+      throw new ConflictException('Telefone já cadastrado.');
+    }
+  }
+
+  // Outros erros devem continuar sendo tratados normalmente.
+  throw erro;
+}
 
     /**
      * Reutilizamos a consulta existente para manter
