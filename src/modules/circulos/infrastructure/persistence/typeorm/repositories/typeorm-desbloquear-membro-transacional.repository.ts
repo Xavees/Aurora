@@ -10,6 +10,7 @@ import type {
 import { CirculoOrmEntity } from '../entities/circulo.orm-entity.js';
 import { MembroCirculoOrmEntity } from '../entities/membro-circulo.orm-entity.js';
 import { BloqueioCirculoOrmEntity } from '../entities/bloqueio-circulo.orm-entity.js';
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 @Injectable()
 export class TypeOrmDesbloquearMembroTransacionalRepository
@@ -17,19 +18,26 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
 {
   constructor(private readonly dataSource: DataSource) {}
 
-  /**
-   * Remove o bloqueio administrativo de um usuário.
-   *
-   * A autorização e a exclusão do bloqueio são realizadas
-   * dentro da mesma transação.
-   */
   async desbloquear(
     circuloId: string,
     solicitanteId: string,
     usuarioAlvoId: string,
   ): Promise<ResultadoDesbloqueioMembro> {
     return this.dataSource.transaction(async (manager) => {
-      // Bloqueia o círculo antes de consultar seus participantes.
+      // Bloqueia a conta do solicitante e confirma que está ativa.
+      const usuario = await manager
+        .getRepository(UsuarioOrmEntity)
+        .createQueryBuilder('usuario')
+        .setLock('pessimistic_write')
+        .where('usuario.id = :solicitanteId', { solicitanteId })
+        .andWhere('usuario.excluidoEm IS NULL')
+        .getOne();
+
+      if (!usuario) {
+        return 'SOLICITANTE_NAO_E_ADMINISTRADOR';
+      }
+
+      // Bloqueia o círculo antes de verificar as permissões.
       const circulo = await manager
         .getRepository(CirculoOrmEntity)
         .createQueryBuilder('circulo')
@@ -45,7 +53,6 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
         MembroCirculoOrmEntity,
       );
 
-      // Somente administradores podem desbloquear usuários.
       const solicitante = await membroRepository.findOne({
         where: {
           circuloId,
@@ -53,10 +60,7 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
         },
       });
 
-      if (
-        !solicitante ||
-        solicitante.funcao !== 'ADMINISTRADOR'
-      ) {
+      if (!solicitante || solicitante.funcao !== 'ADMINISTRADOR') {
         return 'SOLICITANTE_NAO_E_ADMINISTRADOR';
       }
 
@@ -64,7 +68,6 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
         BloqueioCirculoOrmEntity,
       );
 
-      // Verifica se o usuário realmente está bloqueado.
       const bloqueio = await bloqueioRepository.findOne({
         where: {
           circuloId,
@@ -76,7 +79,7 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
         return 'BLOQUEIO_NAO_ENCONTRADO';
       }
 
-      // Remove o bloqueio dentro da transação.
+      // Remove o bloqueio administrativo na mesma transação.
       await bloqueioRepository.remove(bloqueio);
 
       return 'MEMBRO_DESBLOQUEADO';

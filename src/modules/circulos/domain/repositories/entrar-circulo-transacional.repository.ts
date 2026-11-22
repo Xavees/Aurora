@@ -8,7 +8,8 @@ export type ResultadoEntradaCirculo =
   | { status: 'MEMBRO_ADICIONADO'; membro: MembroCirculo }
   | { status: 'CIRCULO_NAO_ENCONTRADO' }
   | { status: 'USUARIO_JA_PARTICIPA' }
-  | { status: 'USUARIO_BLOQUEADO' };
+  | { status: 'USUARIO_BLOQUEADO' }
+  | { status: 'USUARIO_INATIVO' };
 
 /**
  * Contrato para entrada de participantes em círculos.

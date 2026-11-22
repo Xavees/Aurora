@@ -12,7 +12,8 @@ export interface CriarCirculoTransacionalDados {
  */
 export type ResultadoCriacaoCirculo =
   | { status: 'CIRCULO_CRIADO'; circulo: Circulo }
-  | { status: 'CODIGO_CONVITE_DUPLICADO' };
+  | { status: 'CODIGO_CONVITE_DUPLICADO' }
+  | { status: 'CRIADOR_INATIVO' };
 
 export interface CriarCirculoTransacionalRepository {
   criarComAdministrador(

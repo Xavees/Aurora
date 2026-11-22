@@ -11,6 +11,8 @@ import type {
 import { CirculoOrmEntity } from '../entities/circulo.orm-entity.js';
 import { MembroCirculoOrmEntity } from '../entities/membro-circulo.orm-entity.js';
 
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
+
 @Injectable()
 export class TypeOrmCriarCirculoTransacionalRepository
   implements CriarCirculoTransacionalRepository
@@ -19,13 +21,36 @@ export class TypeOrmCriarCirculoTransacionalRepository
 
   /**
    * Cria o círculo e registra o criador como administrador.
-   * Ambas as operações pertencem à mesma transação.
+   *
+   * O bloqueio transacional da conta impede que sua
+   * desativação seja concluída simultaneamente à criação.
    */
   async criarComAdministrador(
     dados: CriarCirculoTransacionalDados,
   ): Promise<ResultadoCriacaoCirculo> {
     try {
       return await this.dataSource.transaction(async (manager) => {
+        /**
+         * Bloqueia o criador antes de criar qualquer registro.
+         *
+         * A futura desativação coordenada deverá utilizar
+         * um protocolo compatível com este bloqueio.
+         */
+        const criador = await manager
+          .getRepository(UsuarioOrmEntity)
+          .createQueryBuilder('usuario')
+          .setLock('pessimistic_write')
+          .where('usuario.id = :criadorId', {
+            criadorId: dados.criadorId,
+          })
+          .andWhere('usuario.excluidoEm IS NULL')
+          .getOne();
+
+        if (!criador) {
+          return { status: 'CRIADOR_INATIVO' };
+        }
+
+        // Cria o círculo dentro da mesma transação.
         const circulo = manager.create(CirculoOrmEntity, {
           nome: dados.nome,
           codigoConvite: dados.codigoConvite,
@@ -33,6 +58,7 @@ export class TypeOrmCriarCirculoTransacionalRepository
 
         const circuloSalvo = await manager.save(circulo);
 
+        // Registra o criador como primeiro administrador.
         const membro = manager.create(MembroCirculoOrmEntity, {
           usuarioId: dados.criadorId,
           circuloId: circuloSalvo.id,
@@ -55,16 +81,18 @@ export class TypeOrmCriarCirculoTransacionalRepository
       /**
        * MariaDB/MySQL: ER_DUP_ENTRY.
        *
-       * Uma colisão de código pode ocorrer mesmo após
-       * uma consulta prévia de disponibilidade.
+       * A restrição UNIQUE continua protegendo contra
+       * códigos de convite duplicados.
        */
       if (
         error instanceof QueryFailedError &&
         (error.driverError as { code?: string }).code ===
           'ER_DUP_ENTRY'
       ) {
-        // Confirma que o erro corresponde ao código de convite.
-        // withDeleted inclui círculos desativados.
+        /**
+         * Confirma que a colisão corresponde ao código.
+         * withDeleted inclui círculos desativados.
+         */
         const codigoExistente = await this.dataSource
           .getRepository(CirculoOrmEntity)
           .createQueryBuilder('circulo')
@@ -79,7 +107,7 @@ export class TypeOrmCriarCirculoTransacionalRepository
         }
       }
 
-      // Erros não relacionados à colisão são propagados.
+      // Erros não relacionados ao convite são propagados.
       throw error;
     }
   }

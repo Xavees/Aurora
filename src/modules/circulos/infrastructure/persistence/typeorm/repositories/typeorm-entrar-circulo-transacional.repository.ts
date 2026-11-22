@@ -2,13 +2,18 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 
-import type {EntrarCirculoTransacionalRepository, ResultadoEntradaCirculo,} from '../../../../domain/repositories/entrar-circulo-transacional.repository.js';
+import type {
+  EntrarCirculoTransacionalRepository,
+  ResultadoEntradaCirculo,
+} from '../../../../domain/repositories/entrar-circulo-transacional.repository.js';
 
 import type { MembroCirculo } from '../../../../domain/entities/membro-circulo.entity.js';
 
 import { CirculoOrmEntity } from '../entities/circulo.orm-entity.js';
 import { MembroCirculoOrmEntity } from '../entities/membro-circulo.orm-entity.js';
 import { BloqueioCirculoOrmEntity } from '../entities/bloqueio-circulo.orm-entity.js';
+
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 @Injectable()
 export class TypeOrmEntrarCirculoTransacionalRepository
@@ -22,10 +27,30 @@ export class TypeOrmEntrarCirculoTransacionalRepository
   ): Promise<ResultadoEntradaCirculo> {
     return this.dataSource.transaction(async (manager) => {
       /**
-       * Bloqueia o círculo durante a entrada.
+       * 1. Bloqueia o usuário antes de modificar
+       * suas participações.
        *
-       * Assim, a entrada e a saída de participantes
-       * seguem o mesmo protocolo de bloqueio.
+       * Esse bloqueio deverá ser utilizado também
+       * pela desativação coordenada de contas.
+       */
+      const usuario = await manager
+        .getRepository(UsuarioOrmEntity)
+        .createQueryBuilder('usuario')
+        .setLock('pessimistic_write')
+        .where('usuario.id = :usuarioId', { usuarioId })
+        .andWhere('usuario.excluidoEm IS NULL')
+        .getOne();
+
+      if (!usuario) {
+        return { status: 'USUARIO_INATIVO' };
+      }
+
+      /**
+       * 2. Bloqueia o círculo para serializar
+       * entradas e demais alterações de membros.
+       *
+       * As outras operações ainda precisarão
+       * ser compatibilizadas com este protocolo.
        */
       const circulo = await manager
         .getRepository(CirculoOrmEntity)
@@ -36,38 +61,37 @@ export class TypeOrmEntrarCirculoTransacionalRepository
         })
         .getOne();
 
-      
+      if (!circulo) {
+        return { status: 'CIRCULO_NAO_ENCONTRADO' };
+      }
 
-if (!circulo) {
-  return { status: 'CIRCULO_NAO_ENCONTRADO' };
-}
+      /**
+       * 3. Verifica se o usuário foi removido
+       * administrativamente deste círculo.
+       */
+      const bloqueioRepository = manager.getRepository(
+        BloqueioCirculoOrmEntity,
+      );
 
-/**
- * Verifica se o usuário foi removido administrativamente.
- *
- * Essa consulta acontece depois do bloqueio pessimista
- * do círculo e antes da inclusão do participante.
- */
-const bloqueioRepository = manager.getRepository(
-  BloqueioCirculoOrmEntity,
-);
+      const bloqueioExistente = await bloqueioRepository.findOne({
+        where: {
+          circuloId: circulo.id,
+          usuarioId,
+        },
+      });
 
-const bloqueioExistente = await bloqueioRepository.findOne({
-  where: {
-    circuloId: circulo.id,
-    usuarioId,
-  },
-});
+      if (bloqueioExistente) {
+        return { status: 'USUARIO_BLOQUEADO' };
+      }
 
-if (bloqueioExistente) {
-  return { status: 'USUARIO_BLOQUEADO' };
-}
+      const membroRepository = manager.getRepository(
+        MembroCirculoOrmEntity,
+      );
 
-const membroRepository = manager.getRepository(
-  MembroCirculoOrmEntity,
-);
-
-      // Impede a entrada duplicada do mesmo usuário.
+      /**
+       * 4. Impede uma segunda participação
+       * do mesmo usuário no mesmo círculo.
+       */
       const membroExistente = await membroRepository.findOne({
         where: {
           circuloId: circulo.id,
@@ -79,6 +103,10 @@ const membroRepository = manager.getRepository(
         return { status: 'USUARIO_JA_PARTICIPA' };
       }
 
+      /**
+       * 5. Registra a participação dentro
+       * da mesma transação.
+       */
       const novoMembro = membroRepository.create({
         circuloId: circulo.id,
         usuarioId,
@@ -102,8 +130,9 @@ const membroRepository = manager.getRepository(
         };
       } catch (error) {
         /**
-         * MariaDB/MySQL: ER_DUP_ENTRY (1062).
-         * A constraint UNIQUE impede participações duplicadas.
+         * A restrição UNIQUE do MariaDB continua
+         * sendo a proteção definitiva contra
+         * participações duplicadas.
          */
         if (
           error instanceof QueryFailedError &&

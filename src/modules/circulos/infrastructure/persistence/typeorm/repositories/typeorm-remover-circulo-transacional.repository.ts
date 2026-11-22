@@ -1,10 +1,16 @@
 
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import type {  RemoverCirculoTransacionalRepository,ResultadoRemocaoCirculo,} from '../../../../domain/repositories/remover-circulo-transacional.repository.js';
+
+import type {
+  RemoverCirculoTransacionalRepository,
+  ResultadoRemocaoCirculo,
+} from '../../../../domain/repositories/remover-circulo-transacional.repository.js';
 
 import { CirculoOrmEntity } from '../entities/circulo.orm-entity.js';
 import { MembroCirculoOrmEntity } from '../entities/membro-circulo.orm-entity.js';
+
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 @Injectable()
 export class TypeOrmRemoverCirculoTransacionalRepository
@@ -18,10 +24,29 @@ export class TypeOrmRemoverCirculoTransacionalRepository
   ): Promise<ResultadoRemocaoCirculo> {
     return this.dataSource.transaction(async (manager) => {
       /**
-       * Bloqueia o círculo durante a operação.
+       * 1. Bloqueia a conta antes do círculo.
        *
-       * Outras transações que utilizarem o mesmo
-       * bloqueio precisarão aguardar sua liberação.
+       * A consulta com FOR UPDATE garante que a
+       * desativação da mesma conta não possa
+       * avançar simultaneamente sem aguardar.
+       */
+      const usuario = await manager
+        .getRepository(UsuarioOrmEntity)
+        .createQueryBuilder('usuario')
+        .setLock('pessimistic_write')
+        .where('usuario.id = :usuarioId', { usuarioId })
+        .andWhere('usuario.excluidoEm IS NULL')
+        .getOne();
+
+      if (!usuario) {
+        return 'USUARIO_NAO_AUTORIZADO';
+      }
+
+      /**
+       * 2. Bloqueia o círculo.
+       *
+       * Isso serializa alterações concorrentes
+       * que utilizarem o mesmo protocolo.
        */
       const circulo = await manager
         .getRepository(CirculoOrmEntity)
@@ -35,8 +60,8 @@ export class TypeOrmRemoverCirculoTransacionalRepository
       }
 
       /**
-       * Verifica a permissão dentro da transação,
-       * após obter o bloqueio do círculo.
+       * 3. Confirma que o usuário ainda participa
+       * do círculo como administrador.
        */
       const membro = await manager
         .getRepository(MembroCirculoOrmEntity)
@@ -52,8 +77,10 @@ export class TypeOrmRemoverCirculoTransacionalRepository
       }
 
       /**
-       * Executa o soft delete utilizando o mesmo
-       * gerenciador da transação.
+       * 4. Executa o soft delete na mesma transação.
+       *
+       * A condição deleted_at IS NULL impede
+       * desativações repetidas.
        */
       const resultado = await manager
         .getRepository(CirculoOrmEntity)

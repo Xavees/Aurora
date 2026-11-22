@@ -5,10 +5,10 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import type { MembroCirculo } from '../../domain/entities/membro-circulo.entity.js';
-
 import type { EntrarCirculoTransacionalRepository } from '../../domain/repositories/entrar-circulo-transacional.repository.js';
 
 import { ENTRAR_CIRCULO_TRANSACIONAL_REPOSITORY } from '../../domain/repositories/entrar-circulo-transacional.repository.token.js';
@@ -53,15 +53,15 @@ export class EntrarCirculoUseCase {
       'Você não tem permissão para entrar neste círculo.',
     );
 
+          case 'USUARIO_INATIVO':
+     throw new UnauthorizedException(
+          'Sua conta está inativa. Entre em contato com o suporte.',
+        );
 
-
-
-
-
-
-
+   
       case 'MEMBRO_ADICIONADO':
         return resultado.membro;
+
     }
   }
 }

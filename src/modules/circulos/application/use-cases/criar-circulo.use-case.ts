@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable,} from '@nestjs/common';
+import { ConflictException, Inject, Injectable,UnauthorizedException} from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import type { Circulo } from '../../domain/entities/circulo.entity.js';
 import type { CirculoRepository } from '../../domain/repositories/circulo.repository.js';
@@ -57,8 +57,16 @@ async executar(dados: CriarCirculoInput): Promise<Circulo> {
     // Criação concluída com sucesso.
     if (resultado.status === 'CIRCULO_CRIADO') {
       return resultado.circulo;
+
     }
 
+
+
+    if (resultado.status === 'CRIADOR_INATIVO') {
+  throw new UnauthorizedException(
+    'Usuário não está ativo.',
+  );
+}
     /**
      * Se o código estiver duplicado, inclusive em um
      * círculo desativado, o laço gera outro código.

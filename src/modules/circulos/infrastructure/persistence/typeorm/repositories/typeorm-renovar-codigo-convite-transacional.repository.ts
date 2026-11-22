@@ -2,10 +2,15 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 
-import type { RenovarCodigoConviteTransacionalRepository, ResultadoRenovacaoCodigoConvite,} from '../../../../domain/repositories/renovar-codigo-convite-transacional.repository.js';
+import type {
+  RenovarCodigoConviteTransacionalRepository,
+  ResultadoRenovacaoCodigoConvite,
+} from '../../../../domain/repositories/renovar-codigo-convite-transacional.repository.js';
 
 import { CirculoOrmEntity } from '../entities/circulo.orm-entity.js';
 import { MembroCirculoOrmEntity } from '../entities/membro-circulo.orm-entity.js';
+
+import { UsuarioOrmEntity } from '../../../../../usuarios/infrastructure/persistence/typeorm/entities/usuario.orm-entity.js';
 
 @Injectable()
 export class TypeOrmRenovarCodigoConviteTransacionalRepository
@@ -16,8 +21,8 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
   /**
    * Renova o código de convite de um círculo.
    *
-   * O bloqueio pessimista impede que operações que seguem
-   * o mesmo protocolo modifiquem o círculo simultaneamente.
+   * A conta do solicitante é bloqueada antes do círculo,
+   * seguindo o protocolo adotado nas operações anteriores.
    */
   async renovar(
     circuloId: string,
@@ -26,7 +31,30 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
   ): Promise<ResultadoRenovacaoCodigoConvite> {
     try {
       return await this.dataSource.transaction(async (manager) => {
-        // Bloqueia o círculo antes de verificar suas permissões.
+        /**
+         * 1. Bloqueia e valida a conta do solicitante.
+         *
+         * Isso impede que a renovação seja confirmada
+         * simultaneamente à desativação da mesma conta
+         * sem coordenação transacional.
+         */
+        const usuario = await manager
+          .getRepository(UsuarioOrmEntity)
+          .createQueryBuilder('usuario')
+          .setLock('pessimistic_write')
+          .where('usuario.id = :solicitanteId', {
+            solicitanteId,
+          })
+          .andWhere('usuario.excluidoEm IS NULL')
+          .getOne();
+
+        if (!usuario) {
+          return { status: 'USUARIO_NAO_AUTORIZADO' };
+        }
+
+        /**
+         * 2. Bloqueia o círculo.
+         */
         const circulo = await manager
           .getRepository(CirculoOrmEntity)
           .createQueryBuilder('circulo')
@@ -38,11 +66,13 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
           return { status: 'CIRCULO_NAO_ENCONTRADO' };
         }
 
+        /**
+         * 3. Confirma a participação administrativa.
+         */
         const membroRepository = manager.getRepository(
           MembroCirculoOrmEntity,
         );
 
-        // Apenas administradores podem renovar o código.
         const solicitante = await membroRepository.findOne({
           where: {
             circuloId,
@@ -62,7 +92,9 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
           return { status: 'CODIGO_CONVITE_DUPLICADO' };
         }
 
-        // Atualiza o código dentro da mesma transação.
+        /**
+         * 4. Atualiza o código na mesma transação.
+         */
         circulo.codigoConvite = novoCodigo;
 
         await manager.save(circulo);
@@ -74,17 +106,14 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
       });
     } catch (error) {
       /**
-       * Uma colisão pode ocorrer se outro círculo
-       * já utiliza o código gerado.
-       *
-       * O banco rejeita a atualização pela restrição UNIQUE.
+       * A restrição UNIQUE do MariaDB protege contra
+       * códigos de convite duplicados.
        */
       if (
         error instanceof QueryFailedError &&
         (error.driverError as { code?: string }).code ===
           'ER_DUP_ENTRY'
       ) {
-        // Inclui círculos desativados na verificação.
         const codigoExistente = await this.dataSource
           .getRepository(CirculoOrmEntity)
           .createQueryBuilder('circulo')
@@ -99,7 +128,6 @@ export class TypeOrmRenovarCodigoConviteTransacionalRepository
         }
       }
 
-      // Não ocultamos erros desconhecidos.
       throw error;
     }
   }
