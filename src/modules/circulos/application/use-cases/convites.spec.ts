@@ -24,18 +24,14 @@ describe('CriarCirculoUseCase', () => {
     vi.fn<CirculoRepository['buscarPorCodigoConvite']>();
   const criarComAdministrador =
     vi.fn<CriarCirculoTransacionalRepository['criarComAdministrador']>();
-  const caso = new CriarCirculoUseCase(
-    {
-      buscarPorCodigoConvite,
-      criar: vi.fn(),
-      buscarPorId: vi.fn(),
-      listarPorUsuario: vi.fn(),
-      atualizar: vi.fn(),
-      remover: vi.fn(),
-    },
-    { criarComAdministrador },
-  );
-
+const caso = new CriarCirculoUseCase(
+  {
+    buscarPorCodigoConvite,
+    buscarPorId: vi.fn(),
+    listarPorUsuario: vi.fn(),
+  },
+  { criarComAdministrador },
+);
   beforeEach(() => {
     buscarPorCodigoConvite.mockReset().mockResolvedValue(null);
     criarComAdministrador.mockReset();

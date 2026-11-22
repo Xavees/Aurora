@@ -4,7 +4,7 @@ import {criarFixtureCirculos, type FixtureCirculos,
 
 import { TypeOrmEntrarCirculoTransacionalRepository } from '../../src/modules/circulos/infrastructure/persistence/typeorm/repositories/typeorm-entrar-circulo-transacional.repository.js';
 import { randomBytes } from 'node:crypto';
-
+import { TypeOrmDesativarUsuarioTransacionalRepository } from '../../src/modules/usuarios/infrastructure/persistence/typeorm/repositories/typeorm-desativar-usuario-transacional.repository.js';
 import { TypeOrmRenovarCodigoConviteTransacionalRepository } from '../../src/modules/circulos/infrastructure/persistence/typeorm/repositories/typeorm-renovar-codigo-convite-transacional.repository.js';
 import { TypeOrmRemoverMembroTransacionalRepository } from '../../src/modules/circulos/infrastructure/persistence/typeorm/repositories/typeorm-remover-membro-transacional.repository.js';
 describe('Círculos — concorrência no MariaDB', () => {
@@ -239,6 +239,86 @@ it('mantém a consistência em remoções administrativas simultâneas', async (
 
   expect(Number(bloqueios[0].total)).toBe(1);
 });
+
+
+
+it('desativa dois usuários simultaneamente em múltiplos círculos', async () => {
+  const usuarioA = await fixture.criarUsuario();
+  const usuarioB = await fixture.criarUsuario();
+
+  const circulo1 = await fixture.criarCirculo(
+    usuarioA.authorization,
+  );
+
+  const circulo2 = await fixture.criarCirculo(
+    usuarioA.authorization,
+  );
+
+  const entrada = new TypeOrmEntrarCirculoTransacionalRepository(
+    fixture.db,
+  );
+
+  await entrada.entrar(circulo1.codigoConvite, usuarioB.id);
+  await entrada.entrar(circulo2.codigoConvite, usuarioB.id);
+
+  const desativacao =
+    new TypeOrmDesativarUsuarioTransacionalRepository(
+      fixture.db,
+    );
+
+  // Dispara as duas transações concorrentemente.
+  const resultados = await Promise.all([
+    desativacao.desativar(usuarioA.id),
+    desativacao.desativar(usuarioB.id),
+  ]);
+
+  expect(resultados).toEqual([true, true]);
+
+  const usuarios = await fixture.db.query<
+    Array<{ id: string; excluidoEm: Date | null }>
+  >(
+    `SELECT
+       id_usuario AS id,
+       excluido_em AS excluidoEm
+     FROM usuario
+     WHERE id_usuario IN (?, ?)`,
+    [usuarioA.id, usuarioB.id],
+  );
+
+  expect(usuarios).toHaveLength(2);
+
+  for (const usuario of usuarios) {
+    expect(usuario.excluidoEm).not.toBeNull();
+  }
+
+  const circulos = await fixture.db.query<
+    Array<{ id: string; deletedAt: Date | null }>
+  >(
+    `SELECT
+       id_circulo AS id,
+       deleted_at AS deletedAt
+     FROM circulo
+     WHERE id_circulo IN (?, ?)`,
+    [circulo1.id, circulo2.id],
+  );
+
+  expect(circulos).toHaveLength(2);
+
+  for (const circulo of circulos) {
+    expect(circulo.deletedAt).not.toBeNull();
+  }
+
+  const participacoes = await fixture.db.query<
+    Array<{ total: string }>
+  >(
+    `SELECT COUNT(*) AS total
+     FROM membro_do_circulo
+     WHERE fk_usuario_id_usuario IN (?, ?)`,
+    [usuarioA.id, usuarioB.id],
+  );
+
+  expect(Number(participacoes[0].total)).toBe(0);
+}, 30_000);
 
 
 });

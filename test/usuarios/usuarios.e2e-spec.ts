@@ -484,6 +484,334 @@ describe('Usuários (e2e)', () => {
       }
     }
   });
+
+
+
+it.each([
+  ['nome nulo', null],
+  ['nome vazio', ''],
+  ['nome apenas com espaços', '   '],
+  ['nome com apenas um caractere', 'A'],
+  ['nome numérico', 123],
+])(
+  'PATCH /usuarios/:id deve rejeitar %s com HTTP 400',
+  async (_cenario, nomeInvalido) => {
+    const email = `e2e-${randomUUID()}@example.com`;
+    const senha = 'SenhaSegura123!';
+
+    try {
+      // Cria um usuário real no banco de testes.
+      const cadastro = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          nome: 'Usuario Original E2E',
+          email,
+          senha,
+        })
+        .expect(201);
+
+      const usuarioId = cadastro.body.usuarioId;
+
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, senha })
+        .expect(200);
+
+      // Tenta alterar o nome usando um valor inválido.
+      await request(app.getHttpServer())
+        .patch(`/usuarios/${usuarioId}`)
+        .set('Authorization', `Bearer ${login.body.access_token}`)
+        .send({ nome: nomeInvalido })
+        .expect(400);
+
+      /**
+       * Garante que o erro de validação não alterou
+       * os dados persistidos no MariaDB.
+       */
+      const registros: Array<{ nome: string }> =
+        await dataSource.query(
+          'SELECT nome FROM usuario WHERE id_usuario = ?',
+          [usuarioId],
+        );
+
+      expect(registros).toHaveLength(1);
+      expect(registros[0]?.nome).toBe('Usuario Original E2E');
+    } finally {
+      // Impede limpeza acidental fora do banco E2E.
+      if (dataSource?.isInitialized) {
+        const resultado: Array<{ banco: string }> =
+          await dataSource.query('SELECT DATABASE() AS banco');
+
+        if (resultado[0]?.banco !== 'aurora_test') {
+          throw new Error('Limpeza E2E bloqueada: banco incorreto.');
+        }
+
+        await dataSource.query(
+          'DELETE FROM usuario WHERE email = ?',
+          [email],
+        );
+      }
+    }
+  },
+);
+
+
+it('PATCH /usuarios/:id retorna 409 para telefone duplicado', async () => {
+  const emailA = `e2e-${randomUUID()}@example.com`;
+  const emailB = `e2e-${randomUUID()}@example.com`;
+  const senha = 'SenhaSegura123!';
+
+  // Telefone válido para testar a restrição UNIQUE.
+  const telefone = '11987654321';
+
+  try {
+    // 1. Cadastra dois usuários.
+    const cadastroA = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        nome: 'Usuario A E2E',
+        email: emailA,
+        senha,
+      })
+      .expect(201);
+
+    const cadastroB = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        nome: 'Usuario B E2E',
+        email: emailB,
+        senha,
+      })
+      .expect(201);
+
+    // 2. Autentica os dois usuários.
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailA, senha })
+      .expect(200);
+
+    const loginB = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailB, senha })
+      .expect(200);
+
+    // 3. O usuário A cadastra o telefone primeiro.
+    await request(app.getHttpServer())
+      .patch(`/usuarios/${cadastroA.body.usuarioId}`)
+      .set('Authorization', `Bearer ${loginA.body.access_token}`)
+      .send({ telefone })
+      .expect(200);
+
+    // 4. O usuário B tenta utilizar o mesmo telefone.
+    const resposta = await request(app.getHttpServer())
+      .patch(`/usuarios/${cadastroB.body.usuarioId}`)
+      .set('Authorization', `Bearer ${loginB.body.access_token}`)
+      .send({ telefone })
+      .expect(409);
+
+    expect(resposta.body).toMatchObject({
+      statusCode: 409,
+      message: 'Telefone já cadastrado.',
+    });
+
+    // 5. Verifica se o banco preservou os valores originais.
+    const registros: Array<{
+      email: string;
+      telefone: string | null;
+    }> = await dataSource.query(
+      'SELECT email, telefone FROM usuario WHERE email IN (?, ?)',
+      [emailA, emailB],
+    );
+
+    expect(registros).toHaveLength(2);
+
+    const usuarioA = registros.find(
+      (registro) => registro.email === emailA,
+    );
+
+    const usuarioB = registros.find(
+      (registro) => registro.email === emailB,
+    );
+
+    expect(usuarioA?.telefone).toBe(telefone);
+    expect(usuarioB?.telefone).toBeNull();
+  } finally {
+    /**
+     * Nunca executamos limpeza sem confirmar
+     * que estamos no banco exclusivo de testes.
+     */
+    if (dataSource?.isInitialized) {
+      const resultado: Array<{ banco: string }> =
+        await dataSource.query('SELECT DATABASE() AS banco');
+
+      if (resultado[0]?.banco !== 'aurora_test') {
+        throw new Error('Limpeza E2E bloqueada: banco incorreto.');
+      }
+
+      await dataSource.query(
+        'DELETE FROM usuario WHERE email IN (?, ?)',
+        [emailA, emailB],
+      );
+    }
+  }
+});
+
+
+
+
+
+it('DELETE /usuarios/:id transfere a administração antes de desativar a conta', async () => {
+  const emailAdmin = `e2e-${randomUUID()}@example.com`;
+  const emailMembro = `e2e-${randomUUID()}@example.com`;
+  const senha = 'SenhaSegura123!';
+
+  let circuloId: string | undefined;
+
+  try {
+    const cadastroAdmin = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        nome: 'Administrador E2E',
+        email: emailAdmin,
+        senha,
+      })
+      .expect(201);
+
+    const cadastroMembro = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        nome: 'Membro E2E',
+        email: emailMembro,
+        senha,
+      })
+      .expect(201);
+
+    const adminId = String(cadastroAdmin.body.usuarioId);
+    const membroId = String(cadastroMembro.body.usuarioId);
+
+    const loginAdmin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailAdmin, senha })
+      .expect(200);
+
+    const loginMembro = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailMembro, senha })
+      .expect(200);
+
+    const tokenAdmin = loginAdmin.body.access_token as string;
+    const tokenMembro = loginMembro.body.access_token as string;
+
+    const criacao = await request(app.getHttpServer())
+      .post('/circulos')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ nome: 'Círculo Sucessão E2E' })
+      .expect(201);
+
+    circuloId = String(criacao.body.id);
+    const codigoConvite = criacao.body.codigoConvite as string;
+
+    // O participante entra no círculo antes da desativação.
+    await request(app.getHttpServer())
+      .post('/circulos/entrar')
+      .set('Authorization', `Bearer ${tokenMembro}`)
+      .send({ codigoConvite })
+      .expect(201);
+
+    // Desativa a conta do administrador pela API.
+    const resposta = await request(app.getHttpServer())
+      .delete(`/usuarios/${adminId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(204);
+
+    expect(resposta.text).toBe('');
+
+    const usuarios = await dataSource.query<
+      Array<{ excluido_em: Date | null }>
+    >(
+      'SELECT excluido_em FROM usuario WHERE id_usuario = ?',
+      [adminId],
+    );
+
+    expect(usuarios[0]?.excluido_em).not.toBeNull();
+
+    const membros = await dataSource.query<
+      Array<{ usuarioId: string; funcao: string }>
+    >(
+      `SELECT
+         fk_usuario_id_usuario AS usuarioId,
+         funcao
+       FROM membro_do_circulo
+       WHERE fk_circulo_id_circulo = ?`,
+      [circuloId],
+    );
+
+    // O membro ativo assume a administração.
+    expect(membros).toHaveLength(1);
+    expect(String(membros[0].usuarioId)).toBe(membroId);
+    expect(membros[0].funcao).toBe('ADMINISTRADOR');
+
+    const circulos = await dataSource.query<
+      Array<{ deleted_at: Date | null }>
+    >(
+      'SELECT deleted_at FROM circulo WHERE id_circulo = ?',
+      [circuloId],
+    );
+
+    expect(circulos[0]?.deleted_at).toBeNull();
+
+    // O token da conta desativada deixa de funcionar.
+    await request(app.getHttpServer())
+      .get(`/usuarios/${adminId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(401);
+
+    // O sucessor continua conseguindo acessar o círculo.
+    await request(app.getHttpServer())
+      .get(`/circulos/${circuloId}`)
+      .set('Authorization', `Bearer ${tokenMembro}`)
+      .expect(200);
+  } finally {
+    if (dataSource?.isInitialized) {
+      const bancos = await dataSource.query<Array<{ banco: string }>>(
+        'SELECT DATABASE() AS banco',
+      );
+
+      if (bancos[0]?.banco !== 'aurora_test') {
+        throw new Error('Limpeza E2E bloqueada: banco incorreto.');
+      }
+
+      // Remove primeiro o círculo para respeitar as FKs.
+      if (circuloId) {
+        await dataSource.query(
+          'DELETE FROM circulo WHERE id_circulo = ?',
+          [circuloId],
+        );
+      }
+
+      await dataSource.query(
+        'DELETE FROM usuario WHERE email IN (?, ?)',
+        [emailAdmin, emailMembro],
+      );
+    }
+  }
+}, 30_000);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   afterAll(async () => {
     if (app) {
       await app.close();
