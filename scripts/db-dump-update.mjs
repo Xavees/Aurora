@@ -51,14 +51,6 @@ async function exportarEstrutura(connection) {
 
   return estrutura;
 }
-
-/**
- * Monta o conteúdo SQL para reconstruir as tabelas
- * em um banco previamente selecionado.
- *
- * FOREIGN_KEY_CHECKS = 0 permite recriar as tabelas
- * mesmo quando existem dependências entre elas.
- */
 function gerarDump(estrutura) {
   const comandos = [
     '-- Aurora - Dump de estrutura',
@@ -85,11 +77,6 @@ function gerarDump(estrutura) {
   return comandos.join('\n');
 }
 
-/**
- * Grava primeiro em um arquivo temporário.
- * Só substitui o dump existente após a geração
- * e validação do conteúdo.
- */
 async function salvarDump(conteudo) {
   if (
     !conteudo.includes('CREATE TABLE') ||

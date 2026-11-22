@@ -99,12 +99,6 @@ async function liberarTrava(connection) {
   console.log('Trava de reconstrução liberada.');
 }
 
-/**
- * Apaga e recria exclusivamente aurora_test.
- *
- * ATENÇÃO: todos os dados anteriores de testes
- * serão permanentemente excluídos.
- */
 async function reconstruirBancoTeste(connection, estrutura) {
   if (
     SOURCE_DATABASE !== 'app_aurora' ||
@@ -133,8 +127,7 @@ async function reconstruirBancoTeste(connection, estrutura) {
   await connection.query(`USE ${destino}`);
 
   try {
-    // Desativa temporariamente a verificação de FKs
-    // para permitir a criação em qualquer ordem.
+   
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
 
     for (const item of estrutura) {
@@ -145,7 +138,6 @@ async function reconstruirBancoTeste(connection, estrutura) {
     await connection.query('SET FOREIGN_KEY_CHECKS = 1');
   }
 
-  // Confere se todas as tabelas foram criadas.
   const [tabelasCriadas] = await connection.query(
     `SELECT TABLE_NAME
      FROM information_schema.TABLES
@@ -185,8 +177,6 @@ async function main() {
   });
 
   try {
-    // A trava deve ser obtida antes de consultar
-    // e reconstruir a estrutura.
     await adquirirTrava(connection);
 
     try {
