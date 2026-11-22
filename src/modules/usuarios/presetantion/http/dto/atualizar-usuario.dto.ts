@@ -1,3 +1,4 @@
+
 import {
   IsOptional,
   IsString,
@@ -5,13 +6,24 @@ import {
   MinLength,
   Matches,
   IsUrl,
+  ValidateIf,
 } from 'class-validator';
 
 export class AtualizarUsuarioDto {
-  @IsOptional()
+  /**
+   * undefined: o usuário não quer atualizar o nome.
+   * null: inválido, pois nome é obrigatório no banco.
+   *
+   * Diferente de IsOptional(), ValidateIf permite
+   * que null seja avaliado pelos demais validadores.
+   */
+  @ValidateIf((_, valor) => valor !== undefined)
   @IsString()
   @MinLength(2)
   @MaxLength(100)
+  @Matches(/\S/, {
+    message: 'Nome não pode conter apenas espaços.',
+  })
   nome?: string;
 
   @IsOptional()
