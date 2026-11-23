@@ -470,3 +470,16 @@ O Aurora conecta o desenvolvimento de software à proposta de apoiar a seguranç
 As escolhas técnicas valorizam a compreensão do problema, a organização do código e a construção de uma base que possa ser estudada, testada e mantida pela equipe.
 
 A utilização de arquitetura modular, padrões de projeto, tipagem estática, autenticação, persistência relacional e containerização também permite aplicar conceitos de Engenharia de Software em um projeto integrado, envolvendo diferentes plataformas e responsabilidades.
+## Upload de fotos de perfil
+
+POST /usuarios/eu/foto: multipart/form-data com campo foto e JWT Bearer. Aceita JPG, PNG ou WebP, até 5 MB e 25 megapixels. O usuário é obtido exclusivamente do JWT, sem aceitar outro ID no envio. Sharp valida o conteúdo, remove metadados e gera WebP de até 512x512.
+
+A foto fica em uploads/perfis, relativa à pasta de execução do backend; UPLOAD_DIR permite configurar outro diretório. No Dev Container atual, o projeto já é compartilhado com o Windows: esta pasta persiste no computador mesmo ao recriar o container. Fora desse ambiente, monte um volume persistente na pasta escolhida.
+
+O banco guarda /uploads/perfis/<uuid>.webp no campo fotoUrl. O frontend resolve esse caminho contra VITE_API_URL; links HTTPS externos existentes continuam funcionando. Não foi necessário relaxar a validação HTTPS do PATCH de perfil: só o endpoint de upload gera caminhos locais.
+
+Fotos são públicas para quem tiver a URL, como avatares. Os nomes são aleatórios. Arquivos antigos são mantidos nesta primeira implementação para não quebrar links ou causar conflitos entre envios simultâneos; planeje limpeza periódica e backup de uploads junto com o banco. A pasta uploads não vai para o Git.
+
+Instale as dependências no ambiente usado para executar a API (npm install) e reinicie npm run start:dev após a instalação. No Web: Meu perfil → Escolher foto → Salvar foto. Não há mudança de esquema do banco.
+
+Testes do serviço: npx vitest run src/modules/usuarios/presetantion/http/foto-perfil.service.spec.ts
