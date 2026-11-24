@@ -71,7 +71,7 @@ describe('Autenticação (e2e)', () => {
       // Verifica o contrato de resposta da autenticação.
       expect(resposta.body).toMatchObject({
         token_type: 'Bearer',
-        expires_in: 900,
+        expires_in: 28800,
       });
 
       expect(resposta.body.access_token).toEqual(expect.any(String));
