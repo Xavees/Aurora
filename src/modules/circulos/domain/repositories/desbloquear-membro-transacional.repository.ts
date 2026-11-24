@@ -18,6 +18,6 @@ export interface DesbloquearMembroTransacionalRepository {
   desbloquear(
     circuloId: string,
     solicitanteId: string,
-    usuarioAlvoId: string,
+    usuarioAlvoId: string | { email: string },
   ): Promise<ResultadoDesbloqueioMembro>;
 }

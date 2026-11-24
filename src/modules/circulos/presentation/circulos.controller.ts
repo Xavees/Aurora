@@ -1,3 +1,4 @@
+import { DesbloquearPorEmailDto } from './dto/desbloquear-por-email.dto.js';
 
 import {
   Body,
@@ -150,6 +151,16 @@ async sair(
  * O desbloqueio não adiciona automaticamente o usuário
  * ao círculo.
  */
+@Post(':id/bloqueios/desbloquear-por-email')
+@HttpCode(HttpStatus.NO_CONTENT)
+async desbloquearPorEmail(
+  @UsuarioAtual() usuario: UsuarioAutenticado,
+  @Param('id', PositiveBigIntPipe) circuloId: string,
+  @Body() dados: DesbloquearPorEmailDto,
+): Promise<void> {
+  await this.desbloquearMembro.executar(circuloId, usuario.id, { email: dados.email });
+}
+
 @Delete(':id/bloqueios/:usuarioId')
 @HttpCode(HttpStatus.NO_CONTENT)
 async desbloquear(

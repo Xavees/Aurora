@@ -21,7 +21,7 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
   async desbloquear(
     circuloId: string,
     solicitanteId: string,
-    usuarioAlvoId: string,
+    usuarioAlvoId: string | { email: string },
   ): Promise<ResultadoDesbloqueioMembro> {
     return this.dataSource.transaction(async (manager) => {
       // Bloqueia a conta do solicitante e confirma que está ativa.
@@ -62,6 +62,16 @@ export class TypeOrmDesbloquearMembroTransacionalRepository
 
       if (!solicitante || solicitante.funcao !== 'ADMINISTRADOR') {
         return 'SOLICITANTE_NAO_E_ADMINISTRADOR';
+      }
+
+      // Resolve o e-mail somente depois de autorizar o administrador.
+      if (typeof usuarioAlvoId !== 'string') {
+        const alvo = await manager.getRepository(UsuarioOrmEntity).findOne({
+          where: { email: usuarioAlvoId.email.trim().toLowerCase() },
+          select: { id: true },
+        });
+        if (!alvo) return 'BLOQUEIO_NAO_ENCONTRADO';
+        usuarioAlvoId = alvo.id;
       }
 
       const bloqueioRepository = manager.getRepository(

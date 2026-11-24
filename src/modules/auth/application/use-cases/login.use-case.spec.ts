@@ -68,7 +68,7 @@ describe('LoginUseCase', () => {
     expect(resultado).toEqual({
       access_token: 'jwt-simulado',
       token_type: 'Bearer',
-      expires_in: 900,
+      expires_in: 28800,
     });
 
     expect(cenario.verificar).toHaveBeenCalledExactlyOnceWith(

@@ -1,3 +1,4 @@
+import { DURACAO_SESSAO_SEGUNDOS } from '../services/duracao-sessao.js';
 import {
   Inject,
   Injectable,
@@ -71,7 +72,7 @@ export class LoginUseCase {
     return {
       access_token: accessToken,
       token_type: 'Bearer',
-      expires_in: 900,
+      expires_in: DURACAO_SESSAO_SEGUNDOS,
     };
   }
 }
