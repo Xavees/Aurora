@@ -1,3 +1,5 @@
+import { FotoPerfilController } from './presetantion/http/foto-perfil.controller.js';
+import { FotoPerfilService } from './presetantion/http/foto-perfil.service.js';
 import { Module } from '@nestjs/common';
 
 import { UsuariosPersistenceModule } from './infrastructure/persistence/typeorm/usuarios-persistence.module.js';
@@ -16,11 +18,11 @@ import { AuthModule } from '../auth/auth.module.js';
     AuthModule,
   ],
 
-  controllers: [
+  controllers: [FotoPerfilController,
     UsuariosController,
   ],
 
-  providers: [
+  providers: [FotoPerfilService,
     BuscarUsuarioUseCase,
     AtualizarUsuarioUseCase,
     DesativarUsuarioUseCase,

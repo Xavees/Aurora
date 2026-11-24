@@ -1,3 +1,5 @@
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { pastaFotos } from './modules/usuarios/presetantion/http/foto-perfil.service.js';
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -7,7 +9,18 @@ import { AppModule } from './app.module.js';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Somente imagens WebP geradas pelo servidor são publicadas nesta pasta.
+  app.useStaticAssets(pastaFotos(), {
+    prefix: '/uploads/perfis/',
+    index: false,
+    dotfiles: 'deny',
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    },
+  });
 
   // Tratamento global de erros.
   app.useGlobalFilters(new GlobalExceptionFilter());
@@ -63,3 +76,4 @@ async function bootstrap() {
 }
 
 void bootstrap();
+

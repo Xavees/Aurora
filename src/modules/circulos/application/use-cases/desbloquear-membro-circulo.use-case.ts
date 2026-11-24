@@ -21,7 +21,7 @@ export class DesbloquearMembroCirculoUseCase {
   async executar(
     circuloId: string,
     solicitanteId: string,
-    usuarioAlvoId: string,
+    usuarioAlvoId: string | { email: string },
   ): Promise<void> {
     const resultado = await this.desbloquearMembroRepository.desbloquear(
       circuloId,

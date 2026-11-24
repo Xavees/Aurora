@@ -1,3 +1,4 @@
+import { DURACAO_SESSAO_SEGUNDOS } from './application/services/duracao-sessao.js';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -37,7 +38,7 @@ import { UsuariosPersistenceModule } from '../usuarios/infrastructure/persistenc
         return {
           secret,
           signOptions: {
-            expiresIn: 900,
+            expiresIn: DURACAO_SESSAO_SEGUNDOS,
             algorithm: 'HS256' as const,
             issuer: 'aurora-api',
             audience: 'aurora-app',
